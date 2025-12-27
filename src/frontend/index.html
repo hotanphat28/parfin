@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ParFin - Family Finance</title>
+        <link rel="icon" type="image/svg+xml" href="images/logo.svg?v=2">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+            rel="stylesheet">
+        <link rel="stylesheet" href="css/style.css">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+
+    <body>
+        <div id="app">
+            <!-- Login View -->
+            <div id="login-view" class="auth-container hidden">
+                <div class="card text-center">
+                    <img src="images/logo.svg" alt="ParFin Logo"
+                        style="width: 80px; height: 80px; margin-bottom: var(--space-md)">
+                    <h1 class="text-xl" style="margin-bottom: var(--space-md)">ParFin</h1>
+                    <p class="text-secondary" style="margin-bottom: var(--space-lg)">Quản lý tài chính gia đình</p>
+                    <form id="login-form">
+                        <div class="input-group">
+                            <label class="input-label">Tên đăng nhập</label>
+                            <input type="text" name="username" class="input-field" placeholder="Nhập tên đăng nhập"
+                                required>
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Mật khẩu</label>
+                            <input type="password" name="password" class="input-field" placeholder="Nhập mật khẩu"
+                                required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-full">Đăng nhập</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="hidden">
+                <header class="dashboard-header flex justify-between items-center">
+                    <div class="flex items-center gap-md">
+                        <img src="images/logo.svg" alt="ParFin Logo" style="width: 40px; height: 40px">
+                        <div>
+                            <h1 class="text-xl">Bảng điều khiển</h1>
+                            <p class="text-secondary">Xin chào, <span id="user-display-name">User</span></p>
+                        </div>
+                    </div>
+                    <div class="flex gap-md">
+                        <button id="add-transaction-btn" class="btn btn-primary">+ Thêm giao dịch</button>
+                        <select id="theme-selector" class="btn btn-secondary" style="padding: 0.5rem">
+                            <option value="system">🌓 Hệ thống</option>
+                            <option value="light">☀️ Sáng</option>
+                            <option value="dark">🌙 Tối</option>
+                        </select>
+                        <button id="logout-btn" class="btn btn-secondary">Đăng xuất</button>
+                    </div>
+                </header>
+
+                <div class="stats-grid">
+                    <div class="card stat-card">
+                        <p class="text-secondary text-sm">Tổng số dư</p>
+                        <h2 class="text-xl text-success" id="total-balance">0 ₫</h2>
+                    </div>
+                    <div class="card stat-card">
+                        <p class="text-secondary text-sm">Thu nhập (Tháng)</p>
+                        <h2 class="text-xl text-success" id="monthly-income">0 ₫</h2>
+                    </div>
+                    <div class="card stat-card">
+                        <p class="text-secondary text-sm">Chi tiêu (Tháng)</p>
+                        <h2 class="text-xl text-danger" id="monthly-expense">0 ₫</h2>
+                    </div>
+                </div>
+
+                <!-- Allocation Chart -->
+                <div class="card" style="margin-bottom: var(--space-md)">
+                    <h3 class="text-lg" style="margin-bottom: var(--space-md)">Phân bổ chi tiêu</h3>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="allocation-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="flex justify-between items-center" style="margin-bottom: var(--space-md)">
+                        <h3 class="text-lg">Giao dịch gần đây</h3>
+                        <div class="flex gap-sm">
+                            <select class="input-field" style="width: auto; padding: 0.5rem" id="filter-type">
+                                <option value="month">Tháng</option>
+                                <option value="all">Tất cả</option>
+                            </select>
+                            <input type="month" id="filter-month" class="input-field"
+                                style="width: auto; padding: 0.5rem">
+                        </div>
+                    </div>
+                    <div class="transaction-list-container">
+                        <table class="w-full text-left border-collapse" id="transaction-table">
+                            <thead>
+                                <tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
+                                    <th class="p-4 font-medium">Ngày</th>
+                                    <th class="p-4 font-medium">Danh mục</th>
+                                    <th class="p-4 font-medium">Mô tả</th>
+                                    <th class="p-4 font-medium text-right">Số tiền</th>
+                                    <th class="p-4 font-medium">Nguồn</th>
+                                    <th class="p-4 font-medium text-right">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transaction-list-body">
+                                <!-- Transactions will be injected here -->
+                                <tr>
+                                    <td colspan="6" class="p-4 text-center text-secondary">Đang tải giao dịch...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modals -->
+        <div id="transaction-modal" class="modal-overlay hidden">
+            <div class="modal-content card">
+                <h2 class="text-xl" style="margin-bottom: var(--space-md)">Thêm giao dịch</h2>
+                <form id="transaction-form">
+                    <input type="hidden" name="id">
+                    <div class="input-group">
+                        <label class="input-label">Loại</label>
+                        <div class="flex gap-md">
+                            <label class="flex items-center gap-md" style="cursor: pointer">
+                                <input type="radio" name="type" value="expense" checked> Chi tiêu
+                            </label>
+                            <label class="flex items-center gap-md" style="cursor: pointer">
+                                <input type="radio" name="type" value="income"> Thu nhập
+                            </label>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Nguồn tiền</label>
+                        <select name="source" class="input-field" required>
+                            <option value="cash">Tiền mặt</option>
+                            <option value="bank">Tài khoản ngân hàng</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Số tiền (VND)</label>
+                        <input type="number" name="amount" class="input-field" required min="0" step="1000">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Danh mục</label>
+                        <select name="category" class="input-field" required>
+                            <option value="Food">Ăn uống</option>
+                            <option value="Transport">Di chuyển</option>
+                            <option value="Shopping">Mua sắm</option>
+                            <option value="Bills">Hóa đơn & Tiện ích</option>
+                            <option value="Entertainment">Giải trí</option>
+                            <option value="Health">Sức khỏe</option>
+                            <option value="Salary">Lương</option>
+                            <option value="Other">Khác</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Ngày</label>
+                        <input type="date" name="date" class="input-field" required>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Mô tả</label>
+                        <input type="text" name="description" class="input-field"
+                            placeholder="Mô tả giao dịch (ví dụ: Ăn trưa)">
+                    </div>
+                    <div class="flex gap-md" style="margin-top: var(--space-lg)">
+                        <button type="button" id="cancel-transaction-btn" class="btn btn-secondary w-full">Hủy</button>
+                        <button type="submit" class="btn btn-primary w-full">Lưu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="toast-container" class="toast-container"></div>
+
+        <script src="js/app.js"></script>
+    </body>
+
+</html>
