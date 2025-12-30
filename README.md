@@ -62,13 +62,17 @@ The application uses **SQLite** for data storage, located at `data/parfin.db`.
 - **Default Credentials**:
     - **Username**: `admin`
     - **Password**: `admin123`
-- **Mock Data**: There is no separate script for generating large sets of mock data. However, running the testing script (see below) will create some sample transactions.
+- **Mock Data**: You can generate mock data for testing purposes using the included script.
+    ```bash
+    python src/scripts/generate_mock_data.py
+    ```
+    This script will populate the database with random transactions for the year 2025.
 
 ## Testing
 
-The project includes an API verification script to ensure core backend functionality is working.
+The project includes scripts to verify API functionality and test performance.
 
-### Running Tests
+### Functional Testing
 
 1.  **Start the Server**: Ensure the application is running (`python run.py`).
 2.  **Run the Test Script**:
@@ -77,12 +81,24 @@ The project includes an API verification script to ensure core backend functiona
     python tests/verify_api.py
     ```
 
-### Test Scope
-
-The `verify_api.py` script covers the following scenarios:
+The `verify_api.py` script covers:
 - **Login**: Verifies authentication with default credentials.
-- **Create Transaction**: a sample expense transaction.
-- **Get Transactions**: Verifies that the created transaction can be retrieved.
+- **Create Transaction**: Creates a sample expense transaction.
+- **Get Transactions**: Verifies retrieval of created transactions.
+
+### Performance Testing
+
+The project also includes a script to test load and concurrency.
+
+1.  **Start the Server**: Ensure the application is running.
+2.  **Run the Performance Test**:
+    ```bash
+    python tests/performance_test.py
+    ```
+
+The `performance_test.py` script measures:
+- **Concurrency**: Simulates multiple threads performing login and transaction retrieval operations.
+- **Load Latency**: Measures response times as the database size increases.
 
 ## Contributing
 
