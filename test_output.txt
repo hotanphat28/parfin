@@ -1,0 +1,17 @@
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.037s
+
+OK
+
+Testing JSON Export...
+Exported 84 transactions
+
+Testing CSV Export...
+CSV Headers verified
+
+Testing JSON Import...
+JSON Import Verified
+
+Testing CSV Import...
+CSV Import Verified

@@ -8,12 +8,13 @@ ParFin is a finance management web application designed for couples. It helps tr
 ## Features
 
 - **Couple-Centric Design**: Tailored for managing shared finances.
-- **Vietnamese Localization (Việt hóa)**: Full UI localization and VND currency formatting (e.g., 100.000 ₫).
+- **Multi-lingual Support**: Supports **English** (default) and **Vietnamese**, switchable via the UI. Includes full localization of text, dates, and currency.
 - **Visual Analytics**: Interactive bar charts (via Chart.js) to visualize spending by category and source (Cash vs Bank).
 - **Theme Support**: Includes Light, Dark, and System Auto-detection modes.
 - **Transaction Details**: Track detailed transaction info including source (Cash/Bank), category, and description.
 - **Monthly Filtering**: Easily view and filter transactions by month.
 - **User Authentication**: Secure login and session management.
+- **Import/Export**: Easily import and export transactions in JSON or CSV format for backup or external analysis.
 - **Admin Management**: Admins can create and manage user accounts.
 
 ## Technology Stack
@@ -36,14 +37,19 @@ ParFin is a finance management web application designed for couples. It helps tr
     cd parfin
     ```
 
-2.  Run the application:
+2.  Create the data directory:
+    ```bash
+    mkdir -p data
+    ```
+
+3.  Run the application:
     ```bash
     python run.py
     ```
 
     *Note: If you have multiple Python versions, you might need to use `python3 run.py`.*
 
-3.  Open your browser and navigate to:
+4.  Open your browser and navigate to:
     ```
     http://localhost:8000
     ```
@@ -67,6 +73,22 @@ The application uses **SQLite** for data storage, located at `data/parfin.db`.
     python src/scripts/generate_mock_data.py
     ```
     This script will populate the database with random transactions for the year 2025.
+
+### Import/Export
+
+The application supports importing and exporting data to facilitate backups and external analysis.
+
+- **Export**:
+  1. Click the "Export" button on the dashboard.
+  2. Select the data range (Current Month or All).
+  3. Choose the format (**JSON** or **CSV**).
+  4. Click "Export" to download the file.
+
+- **Import**:
+  1. Click the "Import" button on the dashboard.
+  2. Select a valid **JSON** or **CSV** file (compatible with the export format).
+  3. Click "Import" to add the transactions to the database.
+
 
 ## Testing
 

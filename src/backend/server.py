@@ -106,6 +106,63 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                  
              self._set_headers(200)
              self.wfile.write(json.dumps(result).encode())
+             
+        elif path == '/api/export':
+             # Query params: month (YYYY-MM), format (json|csv)
+             month = query_params.get('month', [None])[0]
+             export_format = query_params.get('format', ['json'])[0]
+             
+             sql = "SELECT * FROM transactions"
+             args = []
+             if month and month != 'all':
+                 sql += " WHERE date LIKE ?"
+                 args.append(f"{month}%")
+             
+             sql += " ORDER BY date DESC"
+             rows = query_db(sql, args)
+             
+             export_data = []
+             for row in rows:
+                  export_data.append({
+                     "id": row['id'],
+                      "amount": row['amount'],
+                      "type": row['type'],
+                      "category": row['category'],
+                      "description": row['description'],
+                      "date": row['date'],
+                      "currency": row['currency'],
+                      "source": row['source']
+                 })
+             
+             if export_format == 'csv':
+                 import csv
+                 import io
+                 
+                 output = io.StringIO()
+                 # Define CSV columns
+                 fieldnames = ['id', 'date', 'type', 'category', 'amount', 'currency', 'source', 'description']
+                 writer = csv.DictWriter(output, fieldnames=fieldnames)
+                 
+                 writer.writeheader()
+                 for row in export_data:
+                     writer.writerow(row)
+                 
+                 csv_content = output.getvalue()
+                 
+                 self.send_response(200)
+                 self.send_header('Content-type', 'text/csv')
+                 self.send_header('Content-Disposition', f'attachment; filename="transactions_{month or "all"}.csv"')
+                 self.end_headers()
+                 self.wfile.write(csv_content.encode('utf-8'))
+                 
+             else:
+                 # Default JSON
+                 self.send_response(200)
+                 self.send_header('Content-type', 'application/json')
+                 self.send_header('Content-Disposition', f'attachment; filename="transactions_{month or "all"}.json"')
+                 self.end_headers()
+                 self.wfile.write(json.dumps(export_data, indent=2).encode('utf-8'))
+
         else:
              self._set_headers(404)
              self.wfile.write(json.dumps({"error": "Endpoint not found"}).encode())
@@ -209,6 +266,63 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             
             self._set_headers(200)
             self.wfile.write(json.dumps({"success": True}).encode())
+
+        elif path == '/api/import':
+            # Data format: { "format": "csv"|"json", "data": "..." }
+            import_format = data.get('format')
+            import_data = data.get('data')
+            
+            if not import_format or not import_data:
+                self._set_headers(400)
+                self.wfile.write(json.dumps({"error": "Missing format or data"}).encode())
+                return
+
+            try:
+                conn = get_db_connection()
+                c = conn.cursor()
+                
+                # Assume user_id = 1 for now
+                user_id = 1
+                
+                if import_format == 'json':
+                    # Expecting import_data to be a list of dicts or a JSON string representing list of dicts
+                    # If it came from client as object, standard use case.
+                    transactions = import_data if isinstance(import_data, list) else json.loads(import_data)
+                    
+                    for t in transactions:
+                        # minimal validation
+                         c.execute('''
+                            INSERT INTO transactions (user_id, amount, type, category, description, source, date)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ''', (user_id, t.get('amount'), t.get('type'), t.get('category'), 
+                              t.get('description', ''), t.get('source', 'cash'), t.get('date')))
+                        
+                elif import_format == 'csv':
+                    # Parse CSV string
+                    import csv
+                    import io
+                    
+                    # Fix: Handle potential variation in line endings or quotes
+                    f = io.StringIO(import_data)
+                    reader = csv.DictReader(f)
+                    
+                    # Expected CSV headers: amount,type,category,description,source,date
+                    for row in reader:
+                        c.execute('''
+                            INSERT INTO transactions (user_id, amount, type, category, description, source, date)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ''', (user_id, row['amount'], row['type'], row['category'], 
+                              row['description'], row.get('source', 'cash'), row['date']))
+                
+                conn.commit()
+                conn.close()
+                self._set_headers(200)
+                self.wfile.write(json.dumps({"success": True}).encode())
+                
+            except Exception as e:
+                print(f"Import error: {e}")
+                self._set_headers(500)
+                self.wfile.write(json.dumps({"error": f"Import failed: {str(e)}"}).encode())
 
         else:
             self._set_headers(404)

@@ -8,6 +8,7 @@ const App = {
 		transactions: [],
 		filterParams: { type: 'month', month: new Date().toISOString().slice(0, 7) }, // YYYY-MM
 		theme: localStorage.getItem('parfin_theme') || 'system',
+		currentLanguage: localStorage.getItem('parfin_language') || 'en',
 		chart: null
 	},
 
@@ -29,12 +30,24 @@ const App = {
 		filterMonth: document.getElementById('filter-month'),
 		toastContainer: document.getElementById('toast-container'),
 		themeSelector: document.getElementById('theme-selector'),
+		languageSelector: document.getElementById('language-selector'),
 		transactionListBody: document.getElementById('transaction-list-body'),
-		allocationChart: document.getElementById('allocation-chart')
+		allocationChart: document.getElementById('allocation-chart'),
+		// Import/Export Elements
+		exportBtn: document.getElementById('export-btn'),
+		importBtn: document.getElementById('import-btn'),
+		exportModal: document.getElementById('export-modal'),
+		importModal: document.getElementById('import-modal'),
+		exportForm: document.getElementById('export-form'),
+		importForm: document.getElementById('import-form'),
+		cancelExportBtn: document.getElementById('cancel-export-btn'),
+		cancelImportBtn: document.getElementById('cancel-import-btn'),
+		modalTitle: document.getElementById('modal-title')
 	},
 
 	init() {
 		this.applyTheme(this.state.theme);
+		this.setLanguage(this.state.currentLanguage);
 		this.bindEvents();
 		this.checkAuth();
 	},
@@ -47,10 +60,27 @@ const App = {
 			this.elements.transactionForm.querySelector('input[name="id"]').value = '';
 			const dateInput = this.elements.transactionForm.querySelector('input[name="date"]');
 			if (dateInput) dateInput.valueAsDate = new Date();
+			this.elements.modalTitle.textContent = this.t('modal_add_title');
 			this.showModal();
 		});
 		this.elements.cancelTransactionBtn.addEventListener('click', () => this.hideModal());
 		this.elements.transactionForm.addEventListener('submit', (e) => this.handleTransactionSubmit(e));
+
+		// Import/Export Events
+		this.elements.exportBtn.addEventListener('click', () => {
+			this.elements.exportModal.classList.remove('hidden');
+		});
+		this.elements.importBtn.addEventListener('click', () => {
+			this.elements.importModal.classList.remove('hidden');
+		});
+		this.elements.cancelExportBtn.addEventListener('click', () => {
+			this.elements.exportModal.classList.add('hidden');
+		});
+		this.elements.cancelImportBtn.addEventListener('click', () => {
+			this.elements.importModal.classList.add('hidden');
+		});
+		this.elements.exportForm.addEventListener('submit', (e) => this.handleExport(e));
+		this.elements.importForm.addEventListener('submit', (e) => this.handleImport(e));
 
 		// Filter Events
 		this.elements.filterType.addEventListener('change', (e) => {
@@ -82,11 +112,54 @@ const App = {
 			});
 		}
 
+		if (this.elements.languageSelector) {
+			this.elements.languageSelector.value = this.state.currentLanguage;
+			this.elements.languageSelector.addEventListener('change', (e) => {
+				this.setLanguage(e.target.value);
+			});
+		}
+
 		// Date input default to today
 		const dateInput = this.elements.transactionForm.querySelector('input[name="date"]');
 		if (dateInput) {
 			dateInput.valueAsDate = new Date();
 		}
+	},
+
+	t(key) {
+		const lang = this.state.currentLanguage;
+		if (translations[lang] && translations[lang][key]) {
+			return translations[lang][key];
+		}
+		return key; // Fallback
+	},
+
+	setLanguage(lang) {
+		this.state.currentLanguage = lang;
+		localStorage.setItem('parfin_language', lang);
+		this.elements.languageSelector.value = lang;
+		this.updateUIText();
+
+		// Refresh dynamic content
+		if (this.state.transactions.length > 0) {
+			this.renderTransactions();
+			this.updateStats();
+			this.updateChart();
+		}
+	},
+
+	updateUIText() {
+		// Update text content for elements with data-i18n
+		document.querySelectorAll('[data-i18n]').forEach(el => {
+			const key = el.getAttribute('data-i18n');
+			el.textContent = this.t(key);
+		});
+
+		// Update placeholders for elements with data-i18n-placeholder
+		document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+			const key = el.getAttribute('data-i18n-placeholder');
+			el.placeholder = this.t(key);
+		});
 	},
 
 	async checkAuth() {
@@ -118,12 +191,12 @@ const App = {
 				this.state.currentUser = result.user;
 				localStorage.setItem('parfin_user', JSON.stringify(result.user));
 				this.showDashboard();
-				this.showToast('Chào mừng trở lại!', 'success');
+				this.showToast(this.t('toast_welcome'), 'success');
 			} else {
-				this.showToast(result.error || 'Đăng nhập thất bại. Vui lòng kiểm tra lại!', 'error');
+				this.showToast(result.error || this.t('toast_login_fail'), 'error');
 			}
 		} catch (err) {
-			this.showToast('Lỗi kết nối', 'error');
+			this.showToast(this.t('toast_connect_error'), 'error');
 		}
 	},
 
@@ -189,17 +262,17 @@ const App = {
 				this.hideModal();
 				this.elements.transactionForm.reset();
 				this.fetchTransactions();
-				this.showToast(isEdit ? 'Cập nhật thành công!' : 'Thêm giao dịch thành công!', 'success');
+				this.showToast(isEdit ? this.t('toast_update_success') : this.t('toast_add_success'), 'success');
 			} else {
-				this.showToast('Có lỗi xảy ra', 'error');
+				this.showToast(this.t('toast_error'), 'error');
 			}
 		} catch (err) {
-			this.showToast('Lỗi lưu giao dịch', 'error');
+			this.showToast(this.t('toast_save_error'), 'error');
 		}
 	},
 
 	async deleteTransaction(id) {
-		if (!confirm('Bạn có chắc chắn muốn xóa giao dịch này?')) return;
+		if (!confirm(this.t('toast_delete_confirm'))) return;
 
 		try {
 			const response = await fetch('/api/transactions/delete', {
@@ -210,12 +283,12 @@ const App = {
 
 			if (response.ok) {
 				this.fetchTransactions();
-				this.showToast('Đã xóa giao dịch', 'success');
+				this.showToast(this.t('toast_delete_success'), 'success');
 			} else {
-				this.showToast('Lỗi khi xóa', 'error');
+				this.showToast(this.t('toast_delete_error'), 'error');
 			}
 		} catch (err) {
-			this.showToast('Lỗi kết nối', 'error');
+			this.showToast(this.t('toast_connect_error'), 'error');
 		}
 	},
 
@@ -226,7 +299,7 @@ const App = {
 		const form = this.elements.transactionForm;
 		form.id.value = transaction.id;
 		form.amount.value = transaction.amount;
-		form.type.value = transaction.type; // Radio buttons need manual check if necessary, but value setting often works for radio groups if named correctly? No, usually need to check specific radio.
+		form.type.value = transaction.type;
 
 		// Handle radio buttons for type
 		const typeRadios = form.querySelectorAll('input[name="type"]');
@@ -239,8 +312,8 @@ const App = {
 		form.date.value = transaction.date;
 		form.source.value = transaction.source || 'cash';
 
+		this.elements.modalTitle.textContent = this.t('modal_edit_title');
 		this.showModal();
-		// Update modal title logic could go here
 	},
 
 	renderTransactions() {
@@ -248,9 +321,11 @@ const App = {
 		tbody.innerHTML = '';
 
 		if (this.state.transactions.length === 0) {
-			tbody.innerHTML = '<tr><td colspan="6" class="text-center text-secondary" style="padding: 2rem">Chưa có giao dịch nào.</td></tr>';
+			tbody.innerHTML = `<tr><td colspan="6" class="text-center text-secondary" style="padding: 2rem">${this.t('no_transactions')}</td></tr>`;
 			return;
 		}
+
+		const locale = this.state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
 
 		this.state.transactions.forEach(t => {
 			const tr = document.createElement('tr');
@@ -261,10 +336,10 @@ const App = {
 			const sign = isExpense ? '-' : '+';
 			const colorClass = isExpense ? 'text-danger' : 'text-success';
 			const categoryName = this.getCategoryName(t.category);
-			const sourceName = t.source === 'bank' ? '🏦 Ngân hàng' : '💵 Tiền mặt';
+			const sourceName = t.source === 'bank' ? (this.state.currentLanguage === 'vi' ? '🏦 Ngân hàng' : '🏦 Bank') : (this.state.currentLanguage === 'vi' ? '💵 Tiền mặt' : '💵 Cash');
 
 			tr.innerHTML = `
-                <td class="p-4">${new Date(t.date).toLocaleDateString('vi-VN')}</td>
+                <td class="p-4">${new Date(t.date).toLocaleDateString(locale)}</td>
                 <td class="p-4">
                     <div class="flex items-center gap-sm">
                         <span>${this.getCategoryIcon(t.category)}</span>
@@ -342,12 +417,12 @@ const App = {
 				labels: labels,
 				datasets: [
 					{
-						label: 'Tiền mặt',
+						label: this.state.currentLanguage === 'vi' ? 'Tiền mặt' : 'Cash',
 						data: cashData,
 						backgroundColor: '#4BC0C0',
 					},
 					{
-						label: 'Ngân hàng',
+						label: this.state.currentLanguage === 'vi' ? 'Ngân hàng' : 'Bank',
 						data: bankData,
 						backgroundColor: '#36A2EB',
 					}
@@ -369,13 +444,12 @@ const App = {
 					tooltip: {
 						callbacks: {
 							label: (context) => {
-								// Add percentage logic if desired, or just amount as planned
 								let label = context.dataset.label || '';
 								if (label) {
 									label += ': ';
 								}
 								if (context.parsed.y !== null) {
-									label += new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(context.parsed.y);
+									label += this.formatCurrency(context.parsed.y);
 								}
 								return label;
 							}
@@ -387,7 +461,13 @@ const App = {
 	},
 
 	formatCurrency(amount) {
-		return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+		const locale = this.state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
+		const currency = this.state.currentLanguage === 'vi' ? 'VND' : 'USD';
+		// For ParFin, we are keeping the value as VND internally, but let's just format it as VND always for now, 
+		// but using the correct locale punctuation.
+		// Wait, if I change to EN, showing VND might be weird if I don't convert. 
+		// But I am not doing currency conversion. So I should probably keep it as VND but formatted nicely.
+		return new Intl.NumberFormat(locale, { style: 'currency', currency: 'VND' }).format(amount);
 	},
 
 	getCategoryIcon(category) {
@@ -405,24 +485,13 @@ const App = {
 	},
 
 	getCategoryName(categoryKey) {
-		const names = {
-			'Food': 'Ăn uống',
-			'Transport': 'Di chuyển',
-			'Shopping': 'Mua sắm',
-			'Bills': 'Hóa đơn',
-			'Entertainment': 'Giải trí',
-			'Health': 'Sức khỏe',
-			'Salary': 'Lương',
-			'Other': 'Khác'
-		};
-		return names[categoryKey] || categoryKey;
+		// return name based on translation key 'category_<lower_key>'
+		const key = `category_${categoryKey.toLowerCase()}`;
+		return this.t(key);
 	},
 
 	showModal() {
 		this.elements.transactionModal.classList.remove('hidden');
-		// If opening for add (no id set), ensure form is cleared if needed; or just rely on reset() call after submit? 
-		// Better to check: if user clicked "Add", form might need reset if previously edited.
-		// But here we can't distinguish who called showModal easily without args.
 	},
 
 	hideModal() {
@@ -456,6 +525,70 @@ const App = {
 			document.documentElement.setAttribute('data-theme', 'light');
 		}
 		// 'system' uses no attribute, falling back to media query
+	},
+
+	async handleExport(e) {
+		e.preventDefault();
+		const formData = new FormData(e.target);
+		const period = formData.get('period');
+		const format = formData.get('format');
+
+		let url = `/api/export?format=${format}`;
+
+		if (period === 'current') {
+			const currentMonth = this.state.filterParams.month; // YYYY-MM
+			url += `&month=${currentMonth}`;
+		} else {
+			url += `&month=all`;
+		}
+
+		// Trigger download
+		window.open(url, '_blank');
+
+		this.elements.exportModal.classList.add('hidden');
+		this.showToast(this.t('toast_export_process'), 'success');
+	},
+
+	async handleImport(e) {
+		e.preventDefault();
+		const formData = new FormData(e.target);
+		const file = formData.get('file');
+
+		if (!file) return;
+
+		const reader = new FileReader();
+		reader.onload = async (event) => {
+			const content = event.target.result;
+			const isJson = file.name.toLowerCase().endsWith('.json');
+			const format = isJson ? 'json' : 'csv';
+
+			try {
+				const response = await fetch('/api/import', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						format: format,
+						data: isJson ? JSON.parse(content) : content
+					})
+				});
+
+				const result = await response.json();
+
+				if (response.ok) {
+					this.elements.importModal.classList.add('hidden');
+					this.elements.importForm.reset();
+					this.fetchTransactions();
+					this.showToast(this.t('toast_import_success'), 'success');
+				} else {
+					this.showToast(result.error || this.t('toast_import_fail'), 'error');
+				}
+			} catch (err) {
+				console.error(err);
+				this.showToast(this.t('toast_import_error') + err.message, 'error');
+			}
+		};
+
+		reader.readAsText(file);
 	}
 };
 
