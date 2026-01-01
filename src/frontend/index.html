@@ -55,6 +55,8 @@
                     <div class="flex gap-md">
                         <button id="add-transaction-btn" class="btn btn-primary" data-i18n="add_result_btn">+ Add
                             Transaction</button>
+                        <button id="fixed-items-btn" class="btn btn-primary" data-i18n="fixed_items_btn">Fixed
+                            Items</button>
                         <button id="import-btn" class="btn btn-secondary" data-i18n="import_btn">Import</button>
                         <button id="export-btn" class="btn btn-secondary" data-i18n="export_btn">Export</button>
                         <select id="language-selector" class="btn btn-secondary" style="padding: 0.5rem">
@@ -74,6 +76,10 @@
                     <div class="card stat-card">
                         <p class="text-secondary text-sm" data-i18n="total_balance">Total Balance</p>
                         <h2 class="text-xl text-success" id="total-balance">0 ₫</h2>
+                        <div class="flex justify-between text-xs text-secondary mt-sm">
+                            <span>💵 <span id="balance-cash">0</span></span>
+                            <span>🏦 <span id="balance-bank">0</span></span>
+                        </div>
                     </div>
                     <div class="card stat-card">
                         <p class="text-secondary text-sm" data-i18n="monthly_income">Income (Month)</p>
@@ -82,6 +88,38 @@
                     <div class="card stat-card">
                         <p class="text-secondary text-sm" data-i18n="monthly_expense">Expense (Month)</p>
                         <h2 class="text-xl text-danger" id="monthly-expense">0 ₫</h2>
+                    </div>
+                    <div class="card stat-card">
+                        <p class="text-secondary text-sm" data-i18n="total_saving">Total Saving</p>
+                        <h2 class="text-xl text-primary" id="total-saving">0 ₫</h2>
+                        <div class="flex justify-between text-xs text-secondary mt-sm">
+                            <span>💵 <span id="saving-cash">0</span></span>
+                            <span>🏦 <span id="saving-bank">0</span></span>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <p class="text-secondary text-sm" data-i18n="total_support">Total Support</p>
+                        <h2 class="text-xl text-warning" id="total-support">0 ₫</h2>
+                        <div class="flex justify-between text-xs text-secondary mt-sm">
+                            <span>💵 <span id="support-cash">0</span></span>
+                            <span>🏦 <span id="support-bank">0</span></span>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <p class="text-secondary text-sm" data-i18n="total_investment">Total Investment</p>
+                        <h2 class="text-xl text-info" id="total-investment">0 ₫</h2>
+                        <div class="flex justify-between text-xs text-secondary mt-sm">
+                            <span>💵 <span id="investment-cash">0</span></span>
+                            <span>🏦 <span id="investment-bank">0</span></span>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <p class="text-secondary text-sm" data-i18n="total_together">Total Together Budget</p>
+                        <h2 class="text-xl text-success" id="total-together">0 ₫</h2>
+                        <div class="flex justify-between text-xs text-secondary mt-sm">
+                            <span>💵 <span id="together-cash">0</span></span>
+                            <span>🏦 <span id="together-bank">0</span></span>
+                        </div>
                     </div>
                 </div>
 
@@ -139,6 +177,7 @@
                     Add Transaction</h2>
                 <form id="transaction-form">
                     <input type="hidden" name="id">
+                    <!-- 1. Type -->
                     <div class="input-group">
                         <label class="input-label" data-i18n="type_label">Type</label>
                         <div class="flex gap-md">
@@ -150,19 +189,20 @@
                                 <input type="radio" name="type" value="income"> <span
                                     data-i18n="type_income">Income</span>
                             </label>
+                            <label class="flex items-center gap-md" style="cursor: pointer">
+                                <input type="radio" name="type" value="allocation"> <span
+                                    data-i18n="type_allocation">Allocation</span>
+                            </label>
                         </div>
                     </div>
+
+                    <!-- 2. Date -->
                     <div class="input-group">
-                        <label class="input-label" data-i18n="source_label">Source</label>
-                        <select name="source" class="input-field" required>
-                            <option value="cash" data-i18n="source_cash">Cash</option>
-                            <option value="bank" data-i18n="source_bank">Bank Account</option>
-                        </select>
+                        <label class="input-label" data-i18n="date_label">Date</label>
+                        <input type="date" name="date" class="input-field" required>
                     </div>
-                    <div class="input-group">
-                        <label class="input-label" data-i18n="amount_label">Amount (VND)</label>
-                        <input type="number" name="amount" class="input-field" required min="0" step="1000">
-                    </div>
+
+                    <!-- 3. Category -->
                     <div class="input-group">
                         <label class="input-label" data-i18n="category_label">Category</label>
                         <select name="category" class="input-field" required>
@@ -173,19 +213,60 @@
                             <option value="Entertainment" data-i18n="category_entertainment">Entertainment</option>
                             <option value="Health" data-i18n="category_health">Health & Fitness</option>
                             <option value="Salary" data-i18n="category_salary">Salary</option>
+                            <option value="Investment" data-i18n="category_investment">Investment</option>
+                            <option value="Saving" data-i18n="category_saving">Saving</option>
+                            <option value="Debt" data-i18n="category_debt">Debt</option>
+                            <option value="Support" data-i18n="category_support">Support</option>
+                            <option value="Personal" data-i18n="category_personal">Personal Budget</option>
+                            <option value="Together" data-i18n="category_together">Together Budget</option>
                             <option value="Other" data-i18n="category_other">Other</option>
                         </select>
                     </div>
-                    <div class="input-group">
-                        <label class="input-label" data-i18n="date_label">Date</label>
-                        <input type="date" name="date" class="input-field" required>
-                    </div>
+
+                    <!-- 4. Description -->
                     <div class="input-group">
                         <label class="input-label" data-i18n="desc_label">Description</label>
                         <input type="text" name="description" class="input-field"
                             placeholder="Transaction description (e.g., Lunch)"
                             data-i18n-placeholder="desc_placeholder">
                     </div>
+
+                    <!-- 5. Amount -->
+                    <div class="input-group">
+                        <label class="input-label" data-i18n="amount_label">Amount (VND)</label>
+                        <input type="number" name="amount" class="input-field" required min="0" step="1000">
+                    </div>
+
+                    <!-- 6. Use Fund -->
+                    <div class="input-group" id="use-fund-group">
+                        <label class="input-label" data-i18n="fund_label">Use Fund</label>
+                        <select name="fund" class="input-field">
+                            <option value="" data-i18n="fund_none">None</option>
+                            <option value="Saving" data-i18n="fund_saving">Saving</option>
+                            <option value="Support" data-i18n="fund_support">Support</option>
+                            <option value="Investment" data-i18n="fund_investment">Investment</option>
+                            <option value="Together" data-i18n="fund_together">Together Budget</option>
+                        </select>
+                    </div>
+
+                    <!-- 7. Payment Method (Source) -->
+                    <div class="input-group">
+                        <label class="input-label" data-i18n="source_label">Payment method</label>
+                        <select name="source" class="input-field" required>
+                            <option value="cash" data-i18n="source_cash">Cash</option>
+                            <option value="bank" data-i18n="source_bank">Bank Account</option>
+                        </select>
+                    </div>
+
+                    <!-- 8. Destination (For Transfers) -->
+                    <div class="input-group hidden" id="destination-group">
+                        <label class="input-label" data-i18n="destination_label">To (Destination)</label>
+                        <select name="destination" class="input-field">
+                            <option value="cash" data-i18n="source_cash">Cash</option>
+                            <option value="bank" data-i18n="source_bank">Bank Account</option>
+                        </select>
+                    </div>
+
                     <div class="flex gap-md" style="margin-top: var(--space-lg)">
                         <button type="button" id="cancel-transaction-btn" class="btn btn-secondary w-full"
                             data-i18n="cancel_btn">Cancel</button>
@@ -245,6 +326,128 @@
                             data-i18n="cancel_btn">Cancel</button>
                         <button type="submit" class="btn btn-primary w-full"
                             data-i18n="import_action_btn">Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Fixed Items Modal -->
+        <div id="fixed-items-modal" class="modal-overlay hidden">
+            <div class="modal-content card" style="max-width: 800px;">
+                <h2 class="text-xl" style="margin-bottom: var(--space-md)" data-i18n="fixed_items_title">Fixed Monthly
+                    Items</h2>
+                <p class="text-secondary text-sm" style="margin-bottom: var(--space-md)" data-i18n="fixed_items_desc">
+                    Manage recurring items (e.g., salary, rent) and generate transactions for the current month.
+                </p>
+
+                <div class="flex gap-md" style="margin-bottom: var(--space-md)">
+                    <button id="add-fixed-item-btn" class="btn btn-primary" data-i18n="add_fixed_item_btn">+ Add New
+                        Item</button>
+                    <button id="generate-fixed-btn" class="btn btn-success" data-i18n="generate_fixed_btn">Generate for
+                        This Month</button>
+                </div>
+
+                <div class="transaction-list-container"
+                    style="max-height: 300px; overflow-y: auto; margin-bottom: var(--space-lg)">
+                    <table class="w-full text-left border-collapse" id="fixed-items-table">
+                        <thead>
+                            <tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
+                                <th class="p-4 font-medium" data-i18n="table_category">Category</th>
+                                <th class="p-4 font-medium" data-i18n="table_description">Description</th>
+                                <th class="p-4 font-medium text-right" data-i18n="table_amount">Amount</th>
+                                <th class="p-4 font-medium" data-i18n="table_type">Type</th>
+                                <th class="p-4 font-medium text-right" data-i18n="table_action">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fixed-items-list-body">
+                            <!-- Fixed items will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex justify-end">
+                    <button id="close-fixed-modal-btn" class="btn btn-secondary" data-i18n="close_btn">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Fixed Item Sub-Modal -->
+        <div id="fixed-item-form-modal" class="modal-overlay hidden" style="z-index: 1001;">
+            <div class="modal-content card">
+                <h2 class="text-xl" style="margin-bottom: var(--space-md)" id="fixed-form-title"
+                    data-i18n="fixed_item_form_title">Add Fixed Item</h2>
+                <form id="fixed-item-form">
+                    <input type="hidden" name="id">
+                    <div class="input-group">
+                        <label class="input-label" data-i18n="type_label">Type</label>
+                        <div class="flex gap-md" id="fixed-type-group">
+                            <label class="flex items-center gap-md" style="cursor: pointer">
+                                <input type="radio" name="type" value="expense" checked> <span
+                                    data-i18n="type_expense">Expense</span>
+                            </label>
+                            <label class="flex items-center gap-md" style="cursor: pointer">
+                                <input type="radio" name="type" value="income"> <span
+                                    data-i18n="type_income">Income</span>
+                            </label>
+                            <label class="flex items-center gap-md" style="cursor: pointer">
+                                <input type="radio" name="type" value="allocation"> <span
+                                    data-i18n="type_allocation">Allocation</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" data-i18n="category_label">Category</label>
+                        <select name="category" class="input-field" required id="fixed-category-select">
+                            <!-- Categories will be dynamic based on type -->
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" data-i18n="desc_label">Description</label>
+                        <input type="text" name="description" class="input-field"
+                            placeholder="Description (e.g., Monthly Rent)">
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label" data-i18n="amount_label">Amount</label>
+                        <input type="number" name="amount" class="input-field" required min="0" step="1000">
+                    </div>
+
+                    <!-- Use Fund -->
+                    <div class="input-group" id="fixed-use-fund-group">
+                        <label class="input-label" data-i18n="fund_label">Use Fund</label>
+                        <select name="fund" class="input-field">
+                            <option value="" data-i18n="fund_none">None</option>
+                            <option value="Saving" data-i18n="fund_saving">Saving</option>
+                            <option value="Support" data-i18n="fund_support">Support</option>
+                            <option value="Investment" data-i18n="fund_investment">Investment</option>
+                            <option value="Together" data-i18n="fund_together">Together Budget</option>
+                        </select>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="input-group">
+                        <label class="input-label" data-i18n="source_label">Payment method</label>
+                        <select name="source" class="input-field" required>
+                            <option value="cash" data-i18n="source_cash">Cash</option>
+                            <option value="bank" data-i18n="source_bank">Bank Account</option>
+                        </select>
+                    </div>
+
+                    <!-- Destination (For Allocations) -->
+                    <div class="input-group hidden" id="fixed-destination-group">
+                        <label class="input-label" data-i18n="destination_label">To (Destination)</label>
+                        <select name="destination" class="input-field">
+                            <option value="cash" data-i18n="source_cash">Cash</option>
+                            <option value="bank" data-i18n="source_bank">Bank Account</option>
+                        </select>
+                    </div>
+
+                    <div class="flex gap-md" style="margin-top: var(--space-lg)">
+                        <button type="button" id="cancel-fixed-form-btn" class="btn btn-secondary w-full"
+                            data-i18n="cancel_btn">Cancel</button>
+                        <button type="submit" class="btn btn-primary w-full" data-i18n="save_btn">Save</button>
                     </div>
                 </form>
             </div>

@@ -9,7 +9,9 @@ const App = {
 		filterParams: { type: 'month', month: new Date().toISOString().slice(0, 7) }, // YYYY-MM
 		theme: localStorage.getItem('parfin_theme') || 'system',
 		currentLanguage: localStorage.getItem('parfin_language') || 'en',
-		chart: null
+		chart: null,
+		fixedItems: [],
+		balances: {} // Stores current balance state { total, saving, ... } with cash/bank split
 	},
 
 	elements: {
@@ -22,6 +24,25 @@ const App = {
 		totalBalance: document.getElementById('total-balance'),
 		monthlyIncome: document.getElementById('monthly-income'),
 		monthlyExpense: document.getElementById('monthly-expense'),
+		totalSaving: document.getElementById('total-saving'),
+		savingCash: document.getElementById('saving-cash'),
+		savingBank: document.getElementById('saving-bank'),
+
+		totalSupport: document.getElementById('total-support'),
+		supportCash: document.getElementById('support-cash'),
+		supportBank: document.getElementById('support-bank'),
+
+		totalInvestment: document.getElementById('total-investment'),
+		investmentCash: document.getElementById('investment-cash'),
+		investmentBank: document.getElementById('investment-bank'),
+
+		totalTogether: document.getElementById('total-together'),
+		togetherCash: document.getElementById('together-cash'),
+		togetherBank: document.getElementById('together-bank'),
+
+		balanceCash: document.getElementById('balance-cash'),
+		balanceBank: document.getElementById('balance-bank'),
+
 		addTransactionBtn: document.getElementById('add-transaction-btn'),
 		transactionModal: document.getElementById('transaction-modal'),
 		transactionForm: document.getElementById('transaction-form'),
@@ -42,7 +63,18 @@ const App = {
 		importForm: document.getElementById('import-form'),
 		cancelExportBtn: document.getElementById('cancel-export-btn'),
 		cancelImportBtn: document.getElementById('cancel-import-btn'),
-		modalTitle: document.getElementById('modal-title')
+		modalTitle: document.getElementById('modal-title'),
+		// Fixed Items Elements
+		fixedItemsBtn: document.getElementById('fixed-items-btn'),
+		fixedItemsModal: document.getElementById('fixed-items-modal'),
+		addFixedItemBtn: document.getElementById('add-fixed-item-btn'),
+		generateFixedBtn: document.getElementById('generate-fixed-btn'),
+		fixedItemsListBody: document.getElementById('fixed-items-list-body'),
+		closeFixedModalBtn: document.getElementById('close-fixed-modal-btn'),
+		fixedItemFormModal: document.getElementById('fixed-item-form-modal'),
+		fixedFormTitle: document.getElementById('fixed-form-title'),
+		fixedItemForm: document.getElementById('fixed-item-form'),
+		cancelFixedFormBtn: document.getElementById('cancel-fixed-form-btn')
 	},
 
 	init() {
@@ -55,16 +87,28 @@ const App = {
 	bindEvents() {
 		this.elements.loginForm.addEventListener('submit', (e) => this.handleLogin(e));
 		this.elements.logoutBtn.addEventListener('click', () => this.handleLogout());
+
 		this.elements.addTransactionBtn.addEventListener('click', () => {
 			this.elements.transactionForm.reset();
 			this.elements.transactionForm.querySelector('input[name="id"]').value = '';
 			const dateInput = this.elements.transactionForm.querySelector('input[name="date"]');
 			if (dateInput) dateInput.valueAsDate = new Date();
 			this.elements.modalTitle.textContent = this.t('modal_add_title');
+
+			// Initialize category/destination state for default (Expense)
+			this.updateTransactionFormState();
+
 			this.showModal();
 		});
+
 		this.elements.cancelTransactionBtn.addEventListener('click', () => this.hideModal());
 		this.elements.transactionForm.addEventListener('submit', (e) => this.handleTransactionSubmit(e));
+
+		// Transaction Form Type Change
+		const transactionTypeRadios = this.elements.transactionForm.querySelectorAll('input[name="type"]');
+		transactionTypeRadios.forEach(radio => {
+			radio.addEventListener('change', () => this.updateTransactionFormState());
+		});
 
 		// Import/Export Events
 		this.elements.exportBtn.addEventListener('click', () => {
@@ -81,6 +125,43 @@ const App = {
 		});
 		this.elements.exportForm.addEventListener('submit', (e) => this.handleExport(e));
 		this.elements.importForm.addEventListener('submit', (e) => this.handleImport(e));
+
+		// Fixed Items Events
+		this.elements.fixedItemsBtn.addEventListener('click', () => {
+			this.fetchFixedItems();
+			this.elements.fixedItemsModal.classList.remove('hidden');
+		});
+		this.elements.closeFixedModalBtn.addEventListener('click', () => {
+			this.elements.fixedItemsModal.classList.add('hidden');
+		});
+		this.elements.addFixedItemBtn.addEventListener('click', () => {
+			this.elements.fixedItemForm.reset();
+			this.elements.fixedItemForm.querySelector('input[name="id"]').value = '';
+			this.elements.fixedFormTitle.textContent = this.t('fixed_item_form_title');
+
+			// Init categories for fixed items
+			this.updateFixedItemFormState();
+
+			this.elements.fixedItemFormModal.classList.remove('hidden');
+
+			// Initial check for payment methods
+			this.updateFixedItemPaymentMethodOptions();
+		});
+
+		this.elements.cancelFixedFormBtn.addEventListener('click', () => {
+			this.elements.fixedItemFormModal.classList.add('hidden');
+		});
+
+		this.elements.fixedItemForm.addEventListener('submit', (e) => this.handleFixedItemSubmit(e));
+		this.elements.generateFixedBtn.addEventListener('click', () => this.generateFixedTransactions());
+
+		// Fixed Item Form Type Change
+		const fixedTypeRadios = this.elements.fixedItemForm.querySelectorAll('input[name="type"]');
+		fixedTypeRadios.forEach(radio => {
+			radio.addEventListener('change', () => {
+				this.updateFixedItemFormState();
+			});
+		});
 
 		// Filter Events
 		this.elements.filterType.addEventListener('change', (e) => {
@@ -299,18 +380,23 @@ const App = {
 		const form = this.elements.transactionForm;
 		form.id.value = transaction.id;
 		form.amount.value = transaction.amount;
-		form.type.value = transaction.type;
 
-		// Handle radio buttons for type
 		const typeRadios = form.querySelectorAll('input[name="type"]');
 		typeRadios.forEach(radio => {
 			radio.checked = radio.value === transaction.type;
 		});
 
+		// Trigger state update to show/hide fields
+		this.updateTransactionFormState();
+
 		form.category.value = transaction.category;
 		form.description.value = transaction.description || '';
 		form.date.value = transaction.date;
 		form.source.value = transaction.source || 'cash';
+		if (transaction.type === 'allocation' && transaction.category === 'Transfer') {
+			form.destination.value = transaction.destination || 'bank';
+		}
+		form.fund.value = transaction.fund || '';
 
 		this.elements.modalTitle.textContent = this.t('modal_edit_title');
 		this.showModal();
@@ -336,7 +422,23 @@ const App = {
 			const sign = isExpense ? '-' : '+';
 			const colorClass = isExpense ? 'text-danger' : 'text-success';
 			const categoryName = this.getCategoryName(t.category);
-			const sourceName = t.source === 'bank' ? (this.state.currentLanguage === 'vi' ? '🏦 Ngân hàng' : '🏦 Bank') : (this.state.currentLanguage === 'vi' ? '💵 Tiền mặt' : '💵 Cash');
+
+			const sourceName = this.t(t.source === 'bank' ? 'source_bank' : 'source_cash');
+			let destName = '';
+			if (t.type === 'allocation' && t.category === 'Transfer') {
+				destName = ' ➔ ' + this.t(t.destination === 'bank' ? 'source_bank' : 'source_cash');
+			}
+
+			// Fund display
+			let fundBadge = '';
+			if (t.fund) {
+				const fundKey = `fund_${t.fund.toLowerCase()}`;
+				const fundLabel = this.t(fundKey);
+				fundBadge = `<span class="badge badge-info" style="margin-left: 0.5rem; font-size: 0.75rem;">${fundLabel}</span>`;
+			} else if (t.type === 'allocation' && t.category === 'Transfer') {
+				// Badge for transfer
+				fundBadge = `<span class="badge badge-warning" style="margin-left: 0.5rem; font-size: 0.75rem;">Transfer</span>`;
+			}
 
 			tr.innerHTML = `
                 <td class="p-4">${new Date(t.date).toLocaleDateString(locale)}</td>
@@ -348,7 +450,10 @@ const App = {
                 </td>
                 <td class="p-4 text-secondary">${t.description || '-'}</td>
                 <td class="p-4 text-right font-bold ${colorClass}">${sign} ${this.formatCurrency(t.amount)}</td>
-                <td class="p-4 text-secondary">${sourceName}</td>
+                <td class="p-4 text-secondary">
+					${sourceName}${destName}
+					${fundBadge}
+				</td>
                 <td class="p-4 text-right">
                     <button class="btn-icon edit-btn" data-id="${t.id}" style="margin-right: 0.5rem">✏️</button>
                     <button class="btn-icon delete-btn" data-id="${t.id}">🗑️</button>
@@ -368,21 +473,128 @@ const App = {
 
 	updateStats() {
 		const transactions = this.state.transactions;
-		const total = transactions.reduce((acc, t) => {
-			return t.type === 'income' ? acc + t.amount : acc - t.amount;
-		}, 0);
 
-		const income = transactions
-			.filter(t => t.type === 'income')
-			.reduce((acc, t) => acc + t.amount, 0);
+		// Initialize balance objects
+		let total = { cash: 0, bank: 0 };
+		let saving = { cash: 0, bank: 0 };
+		let support = { cash: 0, bank: 0 };
+		let investment = { cash: 0, bank: 0 };
+		let together = { cash: 0, bank: 0 };
 
-		const expense = transactions
-			.filter(t => t.type === 'expense')
-			.reduce((acc, t) => acc + t.amount, 0);
+		let monthlyIncome = 0;
+		let monthlyExpense = 0;
 
-		this.elements.totalBalance.textContent = this.formatCurrency(total);
-		this.elements.monthlyIncome.textContent = this.formatCurrency(income);
-		this.elements.monthlyExpense.textContent = this.formatCurrency(expense);
+		// Helper to ensure source is valid
+		const getSource = (source) => source === 'bank' ? 'bank' : 'cash';
+
+		transactions.forEach(t => {
+			const source = getSource(t.source);
+			const amount = t.amount;
+
+			// --- Monthly Stats ---
+			if (t.type === 'income') {
+				monthlyIncome += amount;
+			} else if (t.type === 'expense') {
+				const allocationCategories = ['Saving', 'Support', 'Investment', 'Together'];
+				// Only count as expense if it's NOT an allocation category (legacy check)
+				if (!allocationCategories.includes(t.category)) {
+					monthlyExpense += amount;
+				}
+			}
+
+			// --- Balance Logic ---
+
+			// 1. INCOME
+			if (t.type === 'income') {
+				total[source] += amount;
+			} else if (t.type === 'expense') {
+				// 2. EXPENSE
+				// If Fund is used, deduct from Fund Balance
+				if (t.fund) {
+					const fundSource = source; // Assumption: Paying via Cash/Bank reduces that specific Fund pool
+					if (t.fund === 'Saving') saving[fundSource] -= amount;
+					else if (t.fund === 'Support') support[fundSource] -= amount;
+					else if (t.fund === 'Investment') investment[fundSource] -= amount;
+					else if (t.fund === 'Together') together[fundSource] -= amount;
+				} else {
+					// If NO Fund used, deduct from General Balance
+					total[source] -= amount;
+
+					// Legacy Logic: If Category is a Fund Name (but type is Expense and no fund used)
+					// This implies "Allocating" to that fund via Expense (Old definition)
+					// We treat this as: General Source Decreases (done above), Fund Balance Increases
+					if (t.category === 'Saving') saving[source] += amount;
+					else if (t.category === 'Support') support[source] += amount;
+					else if (t.category === 'Investment') investment[source] += amount;
+					else if (t.category === 'Together') together[source] += amount;
+				}
+			} else if (t.type === 'allocation') {
+				// 3. ALLOCATION
+				// General Rule: Deduct from Source (General Balance)
+				total[source] -= amount;
+
+				if (t.category === 'Transfer') {
+					// Transfer between accounts (e.g. Cash -> Bank)
+					// Source decreased (above). Destination increases.
+					const destination = t.destination === 'bank' ? 'bank' : 'cash';
+					total[destination] += amount;
+				} else {
+					// Allocation to Fund
+					// Source decreased (General). Fund increases.
+					// We assume the fund grows in the same "currency type" as the source
+					// e.g. Allocate Bank -> Investment (Bank)
+					if (t.category === 'Saving') saving[source] += amount;
+					else if (t.category === 'Support') support[source] += amount;
+					else if (t.category === 'Investment') investment[source] += amount;
+					else if (t.category === 'Together') together[source] += amount;
+				}
+			}
+		});
+
+		// Calculate Totals for display (Sum of Cash + Bank)
+		const totalBalanceVal = total.cash + total.bank;
+		const totalSavingVal = saving.cash + saving.bank;
+		const totalSupportVal = support.cash + support.bank;
+		const totalInvestmentVal = investment.cash + investment.bank;
+		const totalTogetherVal = together.cash + together.bank;
+
+		// Update DOM
+		this.elements.totalBalance.textContent = this.formatCurrency(totalBalanceVal);
+		this.elements.balanceCash.textContent = this.formatCurrency(total.cash);
+		this.elements.balanceBank.textContent = this.formatCurrency(total.bank);
+
+		this.elements.monthlyIncome.textContent = this.formatCurrency(monthlyIncome);
+		this.elements.monthlyExpense.textContent = this.formatCurrency(monthlyExpense);
+
+		if (this.elements.totalSaving) {
+			this.elements.totalSaving.textContent = this.formatCurrency(totalSavingVal);
+			this.elements.savingCash.textContent = this.formatCurrency(saving.cash);
+			this.elements.savingBank.textContent = this.formatCurrency(saving.bank);
+		}
+		if (this.elements.totalSupport) {
+			this.elements.totalSupport.textContent = this.formatCurrency(totalSupportVal);
+			this.elements.supportCash.textContent = this.formatCurrency(support.cash);
+			this.elements.supportBank.textContent = this.formatCurrency(support.bank);
+		}
+		if (this.elements.totalInvestment) {
+			this.elements.totalInvestment.textContent = this.formatCurrency(totalInvestmentVal);
+			this.elements.investmentCash.textContent = this.formatCurrency(investment.cash);
+			this.elements.investmentBank.textContent = this.formatCurrency(investment.bank);
+		}
+		if (this.elements.totalTogether) {
+			this.elements.totalTogether.textContent = this.formatCurrency(totalTogetherVal);
+			this.elements.togetherCash.textContent = this.formatCurrency(together.cash);
+			this.elements.togetherBank.textContent = this.formatCurrency(together.bank);
+		}
+
+		// Store balances in state for form logic
+		this.state.balances = {
+			total: total,
+			saving: saving,
+			support: support,
+			investment: investment,
+			together: together
+		};
 	},
 
 	updateChart() {
@@ -463,10 +675,6 @@ const App = {
 	formatCurrency(amount) {
 		const locale = this.state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
 		const currency = this.state.currentLanguage === 'vi' ? 'VND' : 'USD';
-		// For ParFin, we are keeping the value as VND internally, but let's just format it as VND always for now, 
-		// but using the correct locale punctuation.
-		// Wait, if I change to EN, showing VND might be weird if I don't convert. 
-		// But I am not doing currency conversion. So I should probably keep it as VND but formatted nicely.
 		return new Intl.NumberFormat(locale, { style: 'currency', currency: 'VND' }).format(amount);
 	},
 
@@ -479,6 +687,13 @@ const App = {
 			'Entertainment': '🎬',
 			'Health': '💊',
 			'Salary': '💰',
+			'Transfer': '↔️',
+			'Investment': '📈',
+			'Saving': '🐖',
+			'Debt': '💸',
+			'Support': '🤝',
+			'Personal': '👤',
+			'Together': '👩‍❤️‍👨',
 			'Other': '📝'
 		};
 		return icons[category] || '📝';
@@ -589,6 +804,676 @@ const App = {
 		};
 
 		reader.readAsText(file);
+	},
+
+	async fetchFixedItems() {
+		try {
+			const response = await fetch('/api/fixed_items');
+			if (response.ok) {
+				this.state.fixedItems = await response.json();
+				this.renderFixedItems();
+			}
+		} catch (err) {
+			console.error('Failed to fetch fixed items', err);
+		}
+	},
+
+	renderFixedItems() {
+		const tbody = this.elements.fixedItemsListBody;
+		tbody.innerHTML = '';
+
+		if (this.state.fixedItems.length === 0) {
+			tbody.innerHTML = `<tr><td colspan="5" class="text-center text-secondary" style="padding: 2rem">${this.t('no_transactions')}</td></tr>`;
+			return;
+		}
+
+		this.state.fixedItems.forEach(item => {
+			const tr = document.createElement('tr');
+			tr.className = 'border-b text-sm hovering-row';
+			tr.style.borderColor = 'var(--bg-accent)';
+
+			const isExpense = item.type === 'expense';
+			const colorClass = isExpense ? 'text-danger' : 'text-success';
+			const categoryName = this.getCategoryName(item.category);
+
+			tr.innerHTML = `
+                <td class="p-4">
+                    <div class="flex items-center gap-sm">
+                        <span>${this.getCategoryIcon(item.category)}</span>
+                        <span>${categoryName}</span>
+                    </div>
+                </td>
+                <td class="p-4 text-secondary">${item.description || '-'}</td>
+                <td class="p-4 text-right font-bold ${colorClass}">${this.formatCurrency(item.amount)}</td>
+                <td class="p-4">${item.type === 'income' ? this.t('type_income') : this.t('type_expense')}</td>
+                <td class="p-4 text-right">
+                    <button class="btn-icon edit-fixed-btn" data-id="${item.id}" style="margin-right: 0.5rem">✏️</button>
+                    <button class="btn-icon delete-fixed-btn" data-id="${item.id}">🗑️</button>
+                </td>
+            `;
+			tbody.appendChild(tr);
+		});
+
+		// Delegate events
+		tbody.querySelectorAll('.edit-fixed-btn').forEach(btn => {
+			btn.addEventListener('click', () => this.editFixedItem(parseInt(btn.dataset.id)));
+		});
+		tbody.querySelectorAll('.delete-fixed-btn').forEach(btn => {
+			btn.addEventListener('click', () => this.deleteFixedItem(parseInt(btn.dataset.id)));
+		});
+	},
+
+	updateFixedItemFormState() {
+		const form = this.elements.fixedItemForm;
+		const typeRadios = form.querySelectorAll('input[name="type"]');
+		let type = 'expense';
+		typeRadios.forEach(r => { if (r.checked) type = r.value; });
+
+		const categorySelect = form.querySelector('select[name="category"]');
+		const useFundGroup = form.querySelector('#fixed-use-fund-group');
+		const destGroup = form.querySelector('#fixed-destination-group');
+
+		// 1. Update Categories
+		categorySelect.innerHTML = '';
+		let categories = [];
+		if (type === 'income') {
+			categories = ['Salary', 'Investment', 'Other'];
+		} else if (type === 'allocation') {
+			categories = ['Transfer', 'Saving', 'Support', 'Investment', 'Together'];
+		} else {
+			// Expense types
+			categories = [
+				'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health',
+				'Investment', 'Saving', 'Debt', 'Support', 'Personal', 'Together', 'Other'
+			];
+		}
+
+		categories.forEach(cat => {
+			const option = document.createElement('option');
+			option.value = cat;
+			option.textContent = this.getCategoryName(cat);
+			categorySelect.appendChild(option);
+		});
+
+		// 2. Toggle "Use Fund" Visibility (Only for Expense)
+		if (type === 'expense') {
+			useFundGroup.classList.remove('hidden');
+		} else {
+			useFundGroup.classList.add('hidden');
+			form.fund.value = '';
+		}
+
+		// 3. Toggle Destination field visibility
+		const updateVisibility = () => {
+			if (type === 'allocation' && categorySelect.value === 'Transfer') {
+				destGroup.classList.remove('hidden');
+			} else {
+				destGroup.classList.add('hidden');
+			}
+		};
+
+		if (!form.dataset.catBound) {
+			categorySelect.addEventListener('change', updateVisibility);
+			form.dataset.catBound = 'true';
+		}
+
+		updateVisibility();
+
+		// 4. Update Use Fund Options (Dynamic Filtering)
+		if (type === 'expense') {
+			this.updateFixedItemUseFundOptions();
+			if (!form.dataset.fundBound) {
+				form.fund.addEventListener('change', () => this.updateFixedItemPaymentMethodOptions());
+				form.dataset.fundBound = 'true';
+			}
+		} else {
+			// For Income and Allocation, trigger payment method update directly
+			this.updateFixedItemPaymentMethodOptions();
+		}
+	},
+
+	calculateFixedItemBalances() {
+		// This method should calculate projected balances based on current balances
+		// and potentially other fixed items.
+		// For now, returning current balances as a placeholder.
+		return this.state.balances;
+	},
+
+	updateFixedItemUseFundOptions() {
+		const form = this.elements.fixedItemForm;
+		const fundSelect = form.fund;
+		// Use Projected Balances for Fixed Items logic
+		const balances = this.calculateFixedItemBalances();
+
+		if (!balances || Object.keys(balances).length === 0) return;
+
+		const currentValue = fundSelect.value;
+
+		const fundMap = {
+			'': 'total',
+			'Saving': 'saving',
+			'Support': 'support',
+			'Investment': 'investment',
+			'Together': 'together'
+		};
+
+		const options = [
+			{ value: '', label: this.t('fund_none') },
+			{ value: 'Saving', label: this.t('fund_saving') },
+			{ value: 'Support', label: this.t('fund_support') },
+			{ value: 'Investment', label: this.t('fund_investment') },
+			{ value: 'Together', label: this.t('fund_together') }
+		];
+
+		fundSelect.innerHTML = '';
+
+		options.forEach(opt => {
+			const stateKey = fundMap[opt.value];
+			const balanceObj = balances[stateKey];
+			// Logic parity: Show if balance > 0
+			// For planning, we might want to be permissive, but keeping strict ensures budget validity
+			const available = balanceObj ? (balanceObj.cash + balanceObj.bank) > 0 : false;
+
+			// Always allow None for Expense in Fixed Items? No, enforce budget.
+			if (available) {
+				const option = document.createElement('option');
+				option.value = opt.value;
+				option.textContent = opt.label;
+				fundSelect.appendChild(option);
+			}
+		});
+
+		const availableValues = Array.from(fundSelect.options).map(o => o.value);
+		if (availableValues.includes(currentValue)) {
+			fundSelect.value = currentValue;
+		} else if (availableValues.length > 0) {
+			fundSelect.value = availableValues[0];
+		}
+
+		this.updateFixedItemPaymentMethodOptions();
+	},
+
+	updateFixedItemPaymentMethodOptions() {
+		const form = this.elements.fixedItemForm;
+		const fundSelect = form.fund;
+		const sourceSelect = form.source;
+		// Use Projected Balances
+		const balances = this.calculateFixedItemBalances();
+
+		const typeRadios = form.querySelectorAll('input[name="type"]');
+		let type = 'expense';
+		typeRadios.forEach(r => { if (r.checked) type = r.value; });
+
+		// INCOME: Always show all options
+		if (type === 'income') {
+			const currentSource = sourceSelect.value;
+			sourceSelect.innerHTML = '';
+			const optCash = document.createElement('option');
+			optCash.value = 'cash';
+			optCash.textContent = this.t('source_cash');
+			sourceSelect.appendChild(optCash);
+
+			const optBank = document.createElement('option');
+			optBank.value = 'bank';
+			optBank.textContent = this.t('source_bank');
+			sourceSelect.appendChild(optBank);
+
+			const availableSources = ['cash', 'bank'];
+			if (availableSources.includes(currentSource)) {
+				sourceSelect.value = currentSource;
+			}
+			return;
+		}
+
+		if (!balances) return;
+
+		// EXPENSE or ALLOCATION
+		let stateKey = 'total';
+
+		if (type === 'expense') {
+			const selectedFundValue = fundSelect.value;
+			const fundMap = {
+				'': 'total',
+				'Saving': 'saving',
+				'Support': 'support',
+				'Investment': 'investment',
+				'Together': 'together'
+			};
+			stateKey = fundMap[selectedFundValue];
+		}
+
+		const balanceObj = balances[stateKey];
+		const currentSource = sourceSelect.value;
+		sourceSelect.innerHTML = '';
+
+		if (balanceObj) {
+			if (balanceObj.cash > 0) {
+				const optCash = document.createElement('option');
+				optCash.value = 'cash';
+				optCash.textContent = this.t('source_cash');
+				sourceSelect.appendChild(optCash);
+			}
+			if (balanceObj.bank > 0) {
+				const optBank = document.createElement('option');
+				optBank.value = 'bank';
+				optBank.textContent = this.t('source_bank');
+				sourceSelect.appendChild(optBank);
+			}
+		}
+
+		// Fallback for planning: if projected balance is 0 or less, effectively blocking the option
+		// Maybe add a visual indicator? For now, standard filter.
+
+		const availableSources = Array.from(sourceSelect.options).map(o => o.value);
+		if (availableSources.includes(currentSource)) {
+			sourceSelect.value = currentSource;
+		} else if (availableSources.length > 0) {
+			sourceSelect.value = availableSources[0]; // Select first available
+		}
+	},
+
+	async handleFixedItemSubmit(e) {
+		e.preventDefault();
+		const formData = new FormData(e.target);
+		const data = Object.fromEntries(formData.entries());
+		data.user_id = 1; // Mock user
+
+		const isEdit = !!data.id;
+		const url = isEdit ? '/api/fixed_items/update' : '/api/fixed_items/create';
+
+		try {
+			const response = await fetch(url, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(data)
+			});
+
+			if (response.ok) {
+				this.elements.fixedItemFormModal.classList.add('hidden');
+				this.fetchFixedItems();
+				this.showToast(this.t('toast_save_success'), 'success');
+			} else {
+				this.showToast(this.t('toast_error'), 'error');
+			}
+		} catch (err) {
+			this.showToast(this.t('toast_save_error'), 'error');
+		}
+	},
+
+	editFixedItem(id) {
+		const item = this.state.fixedItems.find(i => i.id === id);
+		if (!item) return;
+
+		const form = this.elements.fixedItemForm;
+		form.id.value = item.id;
+		form.amount.value = item.amount;
+
+		// Set type first to trigger category update
+		const typeRadios = form.querySelectorAll('input[name="type"]');
+		typeRadios.forEach(radio => {
+			if (radio.value === item.type) {
+				radio.checked = true;
+			} else {
+				// Legacy check if needed
+				if (item.type !== 'income' && radio.value === 'expense') {
+					radio.checked = true;
+				}
+			}
+		});
+
+		this.updateFixedItemFormState();
+
+		form.category.value = item.category;
+		form.description.value = item.description || '';
+		form.source.value = item.source || 'cash';
+		form.fund.value = item.fund || '';
+		if (item.type === 'allocation' && item.category === 'Transfer') {
+			form.destination.value = item.destination || 'bank';
+		}
+
+		this.elements.fixedFormTitle.textContent = this.t('edit_fixed_item_title') || 'Edit Fixed Item';
+		this.elements.fixedItemFormModal.classList.remove('hidden');
+	},
+
+	async deleteFixedItem(id) {
+		if (!confirm(this.t('toast_delete_confirm'))) return;
+
+		try {
+			const response = await fetch('/api/fixed_items/delete', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ id })
+			});
+
+			if (response.ok) {
+				this.fetchFixedItems();
+				this.showToast(this.t('toast_delete_success'), 'success');
+			} else {
+				this.showToast(this.t('toast_delete_error'), 'error');
+			}
+		} catch (err) {
+			this.showToast(this.t('toast_connect_error'), 'error');
+		}
+	},
+
+	async generateFixedTransactions() {
+		// Default to current month of filter or today's month
+		let date = this.state.filterParams.month;
+		if (!date) date = new Date().toISOString().slice(0, 7);
+
+		// Append day 01 as default for the transaction date
+		const fullDate = `${date}-01`;
+
+		if (!confirm(`Generate transactions for ${date}?`)) return;
+
+		try {
+			const response = await fetch('/api/fixed_items/generate', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ user_id: 1, date: fullDate })
+			});
+
+			const result = await response.json();
+
+			if (response.ok) {
+				this.elements.fixedItemsModal.classList.add('hidden');
+				this.fetchTransactions();
+				this.showToast(`${this.t('toast_generated_success')} (${result.count})`, 'success');
+			} else {
+				this.showToast(result.error || this.t('toast_error'), 'error');
+			}
+		} catch (err) {
+			this.showToast(this.t('toast_connect_error'), 'error');
+		}
+	},
+
+	updateTransactionFormState() {
+		const form = this.elements.transactionForm;
+		const typeRadios = form.querySelectorAll('input[name="type"]');
+		let type = 'expense';
+		typeRadios.forEach(r => { if (r.checked) type = r.value; });
+
+		const categorySelect = form.querySelector('select[name="category"]');
+		const destGroup = form.querySelector('#destination-group');
+		const useFundGroup = form.querySelector('#use-fund-group');
+
+		// 1. Update Categories
+		let categories = [];
+		if (type === 'income') {
+			categories = ['Salary', 'Other', 'Investment'];
+		} else if (type === 'allocation') {
+			categories = ['Transfer', 'Saving', 'Support', 'Investment', 'Together'];
+		} else {
+			// Expense
+			categories = [
+				'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health',
+				'Debt', 'Personal', 'Other'
+			];
+		}
+
+		// Save current selection if possible
+		const currentCat = categorySelect.value;
+		categorySelect.innerHTML = '';
+		categories.forEach(cat => {
+			const option = document.createElement('option');
+			option.value = cat;
+			option.textContent = this.getCategoryName(cat);
+			categorySelect.appendChild(option);
+		});
+
+		// Restore selection if valid, else select first
+		if (categories.includes(currentCat)) {
+			categorySelect.value = currentCat;
+		}
+
+		// 2. Toggle "Use Fund" Visibility (Only for Expense)
+		if (type === 'expense') {
+			useFundGroup.classList.remove('hidden');
+		} else {
+			useFundGroup.classList.add('hidden');
+			// Reset fund selection when hidden to avoid accidental submission
+			form.fund.value = '';
+		}
+
+		// 3. Toggle Destination field visibility
+		const updateVisibility = () => {
+			if (categorySelect.value === 'Transfer') {
+				destGroup.classList.remove('hidden');
+			} else {
+				destGroup.classList.add('hidden');
+			}
+		};
+
+		if (!form.dataset.catBound) {
+			categorySelect.addEventListener('change', updateVisibility);
+			form.dataset.catBound = 'true';
+		}
+
+		updateVisibility(); // Initial check
+
+		// 4. Update Use Fund Options (Dynamic Filtering)
+		// 4. Update Use Fund Options (Dynamic Filtering)
+		if (type === 'expense') {
+			this.updateUseFundOptions();
+			// Bind change event for dynamic Payment Method filtering
+			if (!form.dataset.fundBound) {
+				form.fund.addEventListener('change', () => this.updatePaymentMethodOptions());
+				form.dataset.fundBound = 'true';
+			}
+		} else {
+			// For Income and Allocation, trigger payment method update directly
+			this.updatePaymentMethodOptions();
+		}
+	},
+
+	updateUseFundOptions() {
+		const form = this.elements.transactionForm;
+		const fundSelect = form.fund;
+		const balances = this.state.balances;
+
+		if (!balances || Object.keys(balances).length === 0) return;
+
+		// Keep current value if possible
+		const currentValue = fundSelect.value;
+
+		// Map values to state keys
+		const fundMap = {
+			'': 'total', // None uses General/Total pool (actually Free Balance, but using Total for now as approximation or logic)
+			// Correction: "None" means spending from "Free Cash/Bank". 
+			// We track "Total Balance" which is the sum of everything? 
+			// Wait, looking at updateStats:
+			// total[source] tracks the GENERAL pool (Cash + Bank).
+			// So yes, 'total' corresponds to 'None'.
+			'Saving': 'saving',
+			'Support': 'support',
+			'Investment': 'investment',
+			'Together': 'together'
+		};
+
+		// Options to check
+		const options = [
+			{ value: '', label: this.t('fund_none') },
+			{ value: 'Saving', label: this.t('fund_saving') },
+			{ value: 'Support', label: this.t('fund_support') },
+			{ value: 'Investment', label: this.t('fund_investment') },
+			{ value: 'Together', label: this.t('fund_together') }
+		];
+
+		fundSelect.innerHTML = '';
+
+		options.forEach(opt => {
+			const stateKey = fundMap[opt.value];
+			const balanceObj = balances[stateKey];
+			// Show if balance exists and Total (Cash + Bank) > 0
+			// Always show 'None' if we want to allow negative general balance? 
+			// User requirement: "Use Fund option only display if total amount available."
+			const available = balanceObj ? (balanceObj.cash + balanceObj.bank) > 0 : false;
+
+			if (available) {
+				const option = document.createElement('option');
+				option.value = opt.value;
+				option.textContent = opt.label; // + ` (${this.formatCurrency(balanceObj.cash + balanceObj.bank)})` ? No, just label.
+				fundSelect.appendChild(option);
+			}
+		});
+
+		// Fallback: If current value is no longer valid, select first available
+		const availableValues = Array.from(fundSelect.options).map(o => o.value);
+		if (availableValues.includes(currentValue)) {
+			fundSelect.value = currentValue;
+		} else if (availableValues.length > 0) {
+			fundSelect.value = availableValues[0];
+		}
+
+		// Trigger payment method update
+		this.updatePaymentMethodOptions();
+	},
+
+	updatePaymentMethodOptions() {
+		const form = this.elements.transactionForm;
+		const fundSelect = form.fund;
+		const sourceSelect = form.source;
+		const balances = this.state.balances;
+
+		// Get current type
+		const typeRadios = form.querySelectorAll('input[name="type"]');
+		let type = 'expense';
+		typeRadios.forEach(r => { if (r.checked) type = r.value; });
+
+		// INCOME: Always show all options
+		if (type === 'income') {
+			// Keep current selection if possible
+			const currentSource = sourceSelect.value;
+
+			sourceSelect.innerHTML = '';
+			const optCash = document.createElement('option');
+			optCash.value = 'cash';
+			optCash.textContent = this.t('source_cash');
+			sourceSelect.appendChild(optCash);
+
+			const optBank = document.createElement('option');
+			optBank.value = 'bank';
+			optBank.textContent = this.t('source_bank');
+			sourceSelect.appendChild(optBank);
+
+			// Restore selection
+			const availableSources = ['cash', 'bank'];
+			if (availableSources.includes(currentSource)) {
+				sourceSelect.value = currentSource;
+			}
+			return;
+		}
+
+		if (!balances) return;
+
+		// EXPENSE or ALLOCATION
+
+		let stateKey = 'total'; // Default to General Pool (Allocation or Expense-None)
+
+		if (type === 'expense') {
+			const selectedFundValue = fundSelect.value;
+			const fundMap = {
+				'': 'total',
+				'Saving': 'saving',
+				'Support': 'support',
+				'Investment': 'investment',
+				'Together': 'together'
+			};
+			stateKey = fundMap[selectedFundValue];
+		}
+		// For Allocation, stateKey remains 'total' (General Pool)
+
+		const balanceObj = balances[stateKey];
+
+		// Keep current source selection if possible
+		const currentSource = sourceSelect.value;
+
+		sourceSelect.innerHTML = '';
+
+		if (balanceObj) {
+			if (balanceObj.cash > 0) {
+				const optCash = document.createElement('option');
+				optCash.value = 'cash';
+				optCash.textContent = this.t('source_cash');
+				sourceSelect.appendChild(optCash);
+			}
+			if (balanceObj.bank > 0) {
+				const optBank = document.createElement('option');
+				optBank.value = 'bank';
+				optBank.textContent = this.t('source_bank');
+				sourceSelect.appendChild(optBank);
+			}
+		}
+
+		// Restore selection
+		const availableSources = Array.from(sourceSelect.options).map(o => o.value);
+		if (availableSources.includes(currentSource)) {
+			sourceSelect.value = currentSource;
+		} else if (availableSources.length > 0) {
+			sourceSelect.value = availableSources[0]; // Select first available
+		}
+	},
+
+	calculateFixedItemBalances() {
+		const fixedItems = this.state.fixedItems || [];
+
+		// Initialize balance objects (Same structure as main balances)
+		let total = { cash: 0, bank: 0 };
+		let saving = { cash: 0, bank: 0 };
+		let support = { cash: 0, bank: 0 };
+		let investment = { cash: 0, bank: 0 };
+		let together = { cash: 0, bank: 0 };
+
+		const getSource = (source) => source === 'bank' ? 'bank' : 'cash';
+
+		fixedItems.forEach(t => {
+			const source = getSource(t.source);
+			const amount = t.amount;
+
+			// 1. INCOME
+			if (t.type === 'income') {
+				total[source] += amount;
+			} else if (t.type === 'expense') {
+				// 2. EXPENSE
+				if (t.fund) {
+					const fundSource = source;
+					if (t.fund === 'Saving') saving[fundSource] -= amount;
+					else if (t.fund === 'Support') support[fundSource] -= amount;
+					else if (t.fund === 'Investment') investment[fundSource] -= amount;
+					else if (t.fund === 'Together') together[fundSource] -= amount;
+				} else {
+					total[source] -= amount;
+
+					// Legacy Logic for Expense Categories acting as Allocation
+					if (t.category === 'Saving') saving[source] += amount;
+					else if (t.category === 'Support') support[source] += amount;
+					else if (t.category === 'Investment') investment[source] += amount;
+					else if (t.category === 'Together') together[source] += amount;
+				}
+			} else if (t.type === 'allocation') {
+				// 3. ALLOCATION
+				total[source] -= amount;
+
+				if (t.category === 'Transfer') {
+					const destination = t.destination === 'bank' ? 'bank' : 'cash';
+					total[destination] += amount;
+				} else {
+					// Allocation to Fund
+					if (t.category === 'Saving') saving[source] += amount;
+					else if (t.category === 'Support') support[source] += amount;
+					else if (t.category === 'Investment') investment[source] += amount;
+					else if (t.category === 'Together') together[source] += amount;
+				}
+			}
+		});
+
+		return {
+			total: total,
+			saving: saving,
+			support: support,
+			investment: investment,
+			together: together
+		};
 	}
 };
 

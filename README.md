@@ -8,13 +8,16 @@ ParFin is a finance management web application designed for couples. It helps tr
 ## Features
 
 - **Couple-Centric Design**: Tailored for managing shared finances.
-- **Multi-lingual Support**: Supports **English** (default) and **Vietnamese**, switchable via the UI. Includes full localization of text, dates, and currency.
-- **Visual Analytics**: Interactive bar charts (via Chart.js) to visualize spending by category and source (Cash vs Bank).
+- **Multi-lingual Support**: Supports **English** (default) and **Vietnamese**, switchable via the UI.
+- **Fixed Items Management**: Manage recurring monthly items (e.g., Salary, Rent) and auto-generate transactions.
+- **Fund Allocation**: Organize finances into specific funds (Serving, Support, Investment, Together Budget).
+- **Flexible Transactions**: Support for Expenses, Incomes, and **Allocations (Transfers)** between accounts.
+- **Visual Analytics**: Interactive bar charts (via Chart.js) to visualize spending by category and payment method.
 - **Theme Support**: Includes Light, Dark, and System Auto-detection modes.
-- **Transaction Details**: Track detailed transaction info including source (Cash/Bank), category, and description.
+- **Detailed Tracking**: Track transaction details including **Payment Method (Cash/Bank)**, category, fund usage, and description.
 - **Monthly Filtering**: Easily view and filter transactions by month.
 - **User Authentication**: Secure login and session management.
-- **Import/Export**: Easily import and export transactions in JSON or CSV format for backup or external analysis.
+- **Import/Export**: Easily import and export transactions in JSON or CSV format.
 - **Admin Management**: Admins can create and manage user accounts.
 
 ## Technology Stack
@@ -22,6 +25,27 @@ ParFin is a finance management web application designed for couples. It helps tr
 - **Backend**: Python (Native `http.server`, `sqlite3`)
 - **Frontend**: HTML5, CSS3, JavaScript (Vanilla), Chart.js
 - **Database**: SQLite
+
+## Directory Structure
+
+```
+parfin/
+├── data/                   # SQLite database storage (created on run)
+├── src/
+│   ├── backend/            # Python server logic and database handling
+│   │   ├── db.py           # Database connection and initialization
+│   │   └── server.py       # HTTP request handlers and API routes
+│   ├── frontend/           # Web interface assets
+│   │   ├── css/            # Stylesheets
+│   │   ├── images/         # Icons and logo
+│   │   ├── js/             # Application logic (app.js, translations.js)
+│   │   └── index.html      # Main entry point
+│   └── scripts/            # Utility scripts (e.g., mock data generator)
+├── tests/                  # Verification and performance tests
+├── run.py                  # Application entry point
+├── README.md               # Project documentation
+└── LICENSE                 # MIT License
+```
 
 ## Getting Started
 
@@ -58,7 +82,8 @@ ParFin is a finance management web application designed for couples. It helps tr
 
 1.  **Login**: Use the default admin credentials (if initialized) or credentials provided by your administrator.
 2.  **Dashboard**: View your recent transactions, allocation charts, and financial overview.
-3.  **Add Transaction**: Use the interface to log new expenses or income.
+3.  **Add Transaction**: Use the interface to log new expenses, incomes, or allocations.
+4.  **Fixed Items**: Define recurring monthly items (like Rent or Salary) and easily generate them for the current month.
 
 ## Data Management
 

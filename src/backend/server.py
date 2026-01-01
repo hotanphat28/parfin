@@ -101,7 +101,10 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                      "description": row['description'],
                      "date": row['date'],
                      "currency": row['currency'],
-                     "source": row['source']
+                     "source": row['source'],
+                     "source": row['source'],
+                     "destination": row['destination'] if 'destination' in row.keys() else None,
+                     "fund": row['fund'] if 'fund' in row.keys() else None
                  })
                  
              self._set_headers(200)
@@ -131,7 +134,10 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                       "description": row['description'],
                       "date": row['date'],
                       "currency": row['currency'],
-                      "source": row['source']
+                      "source": row['source'],
+                      "source": row['source'],
+                      "destination": row['destination'] if 'destination' in row.keys() else None,
+                      "fund": row['fund'] if 'fund' in row.keys() else None
                  })
              
              if export_format == 'csv':
@@ -140,7 +146,7 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                  
                  output = io.StringIO()
                  # Define CSV columns
-                 fieldnames = ['id', 'date', 'type', 'category', 'amount', 'currency', 'source', 'description']
+                 fieldnames = ['id', 'date', 'type', 'category', 'amount', 'currency', 'source', 'fund', 'description']
                  writer = csv.DictWriter(output, fieldnames=fieldnames)
                  
                  writer.writeheader()
@@ -162,6 +168,26 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                  self.send_header('Content-Disposition', f'attachment; filename="transactions_{month or "all"}.json"')
                  self.end_headers()
                  self.wfile.write(json.dumps(export_data, indent=2).encode('utf-8'))
+
+        elif path == '/api/fixed_items':
+             # Fetch all fixed items for user (default 1 for now)
+             user_id = 1
+             items = query_db('SELECT * FROM fixed_items WHERE user_id = ?', (user_id,))
+             
+             result = []
+             for item in items:
+                 result.append({
+                     "id": item['id'],
+                     "amount": item['amount'],
+                     "type": item['type'],
+                     "category": item['category'],
+                     "description": item['description'],
+                     "source": item['source'],
+                     "fund": item['fund'] if 'fund' in item.keys() else None
+                 })
+             
+             self._set_headers(200)
+             self.wfile.write(json.dumps(result).encode())
 
         else:
              self._set_headers(404)
@@ -219,13 +245,15 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             date = data.get('date')
             
             source = data.get('source', 'cash')
+            destination = data.get('destination')
+            fund = data.get('fund')
             
             conn = get_db_connection()
             c = conn.cursor()
             c.execute('''
-                INSERT INTO transactions (user_id, amount, type, category, description, source, date)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (user_id, amount, trans_type, category, description, source, date))
+                INSERT INTO transactions (user_id, amount, type, category, description, source, destination, fund, date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, amount, trans_type, category, description, source, destination, fund, date))
             conn.commit()
             conn.close()
             
@@ -240,15 +268,17 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             category = data.get('category')
             description = data.get('description', '')
             source = data.get('source', 'cash')
+            destination = data.get('destination')
+            fund = data.get('fund')
             date = data.get('date')
             
             conn = get_db_connection()
             c = conn.cursor()
             c.execute('''
                 UPDATE transactions 
-                SET amount = ?, type = ?, category = ?, description = ?, source = ?, date = ?
+                SET amount = ?, type = ?, category = ?, description = ?, source = ?, destination = ?, fund = ?, date = ?
                 WHERE id = ?
-            ''', (amount, trans_type, category, description, source, date, trans_id))
+            ''', (amount, trans_type, category, description, source, destination, fund, date, trans_id))
             conn.commit()
             conn.close()
             
@@ -292,10 +322,10 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                     for t in transactions:
                         # minimal validation
                          c.execute('''
-                            INSERT INTO transactions (user_id, amount, type, category, description, source, date)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO transactions (user_id, amount, type, category, description, source, fund, date)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         ''', (user_id, t.get('amount'), t.get('type'), t.get('category'), 
-                              t.get('description', ''), t.get('source', 'cash'), t.get('date')))
+                              t.get('description', ''), t.get('source', 'cash'), t.get('fund'), t.get('date')))
                         
                 elif import_format == 'csv':
                     # Parse CSV string
@@ -309,10 +339,10 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                     # Expected CSV headers: amount,type,category,description,source,date
                     for row in reader:
                         c.execute('''
-                            INSERT INTO transactions (user_id, amount, type, category, description, source, date)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO transactions (user_id, amount, type, category, description, source, fund, date)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         ''', (user_id, row['amount'], row['type'], row['category'], 
-                              row['description'], row.get('source', 'cash'), row['date']))
+                              row['description'], row.get('source', 'cash'), row.get('fund'), row['date']))
                 
                 conn.commit()
                 conn.close()
@@ -323,6 +353,99 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                 print(f"Import error: {e}")
                 self._set_headers(500)
                 self.wfile.write(json.dumps({"error": f"Import failed: {str(e)}"}).encode())
+
+        elif path == '/api/fixed_items/create':
+            user_id = data.get('user_id', 1)
+            amount = float(data.get('amount'))
+            item_type = data.get('type')
+            category = data.get('category')
+            description = data.get('description', '')
+            source = data.get('source', 'cash')
+            fund = data.get('fund')
+            
+            conn = get_db_connection()
+            c = conn.cursor()
+            c.execute('''
+                INSERT INTO fixed_items (user_id, amount, type, category, description, source, fund)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, amount, item_type, category, description, source, fund))
+            conn.commit()
+            conn.close()
+            
+            self._set_headers(201)
+            self.wfile.write(json.dumps({"success": True}).encode())
+
+        elif path == '/api/fixed_items/update':
+            item_id = data.get('id')
+            amount = float(data.get('amount'))
+            item_type = data.get('type')
+            category = data.get('category')
+            description = data.get('description', '')
+            source = data.get('source', 'cash')
+            fund = data.get('fund')
+            
+            conn = get_db_connection()
+            c = conn.cursor()
+            c.execute('''
+                UPDATE fixed_items 
+                SET amount = ?, type = ?, category = ?, description = ?, source = ?, fund = ?
+                WHERE id = ?
+            ''', (amount, item_type, category, description, source, fund, item_id))
+            conn.commit()
+            conn.close()
+            
+            self._set_headers(200)
+            self.wfile.write(json.dumps({"success": True}).encode())
+
+        elif path == '/api/fixed_items/delete':
+            item_id = data.get('id')
+            
+            conn = get_db_connection()
+            c = conn.cursor()
+            c.execute('DELETE FROM fixed_items WHERE id = ?', (item_id,))
+            conn.commit()
+            conn.close()
+            
+            self._set_headers(200)
+            self.wfile.write(json.dumps({"success": True}).encode())
+
+        elif path == '/api/fixed_items/generate':
+            # Generate transactions from fixed items for a specific month/date
+            user_id = data.get('user_id', 1)
+            target_date = data.get('date') # Format: YYYY-MM-DD
+            
+            if not target_date:
+                self._set_headers(400)
+                self.wfile.write(json.dumps({"error": "Date is required"}).encode())
+                return
+
+            conn = get_db_connection()
+            c = conn.cursor()
+            
+            # Get all fixed items
+            c.execute('SELECT * FROM fixed_items WHERE user_id = ?', (user_id,))
+            items = c.fetchall()
+            
+            if not items:
+                conn.close()
+                self._set_headers(200)
+                self.wfile.write(json.dumps({"success": True, "count": 0, "message": "No fixed items found"}).encode())
+                return
+
+            count = 0
+            for item in items:
+                c.execute('''
+                    INSERT INTO transactions (user_id, amount, type, category, description, source, fund, date)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (user_id, item['amount'], item['type'], item['category'], 
+                      item['description'], item['source'], item['fund'] if 'fund' in item.keys() else None, target_date))
+                count += 1
+                
+            conn.commit()
+            conn.close()
+            
+            self._set_headers(201)
+            self.wfile.write(json.dumps({"success": True, "count": count}).encode())
 
         else:
             self._set_headers(404)

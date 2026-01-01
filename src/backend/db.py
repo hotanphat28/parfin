@@ -37,6 +37,8 @@ def init_db():
             category TEXT NOT NULL,
             description TEXT,
             source TEXT DEFAULT 'cash', -- 'cash' or 'bank'
+            destination TEXT DEFAULT NULL, -- 'cash' or 'bank' (for transfers)
+            fund TEXT, -- 'Saving', 'Support', 'Investment', 'Together'
             date TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
@@ -60,6 +62,45 @@ def init_db():
     except sqlite3.OperationalError:
         print("Migrating database: Adding source column to transactions table...")
         c.execute("ALTER TABLE transactions ADD COLUMN source TEXT DEFAULT 'cash'")
+
+    # Migration: Add destination column to transactions if it doesn't exist
+    try:
+        c.execute('SELECT destination FROM transactions LIMIT 1')
+    except sqlite3.OperationalError:
+        print("Migrating database: Adding destination column to transactions table...")
+        c.execute("ALTER TABLE transactions ADD COLUMN destination TEXT DEFAULT NULL")
+
+    # Migration: Add fund column if it doesn't exist
+
+    # Migration: Add fund column if it doesn't exist
+    try:
+        c.execute('SELECT fund FROM transactions LIMIT 1')
+    except sqlite3.OperationalError:
+        print("Migrating database: Adding fund column to transactions table...")
+        c.execute("ALTER TABLE transactions ADD COLUMN fund TEXT DEFAULT NULL")
+
+    # Create Fixed Items Table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS fixed_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            amount REAL NOT NULL,
+            type TEXT NOT NULL, -- 'income' or 'expense'
+            category TEXT NOT NULL,
+            description TEXT,
+            source TEXT DEFAULT 'cash', -- 'cash' or 'bank'
+            fund TEXT, -- 'Saving', 'Support', 'Investment', 'Together'
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+
+    # Migration: Add fund column to fixed_items if it doesn't exist
+    try:
+        c.execute('SELECT fund FROM fixed_items LIMIT 1')
+    except sqlite3.OperationalError:
+        print("Migrating database: Adding fund column to fixed_items table...")
+        c.execute("ALTER TABLE fixed_items ADD COLUMN fund TEXT DEFAULT NULL")
 
     conn.commit()
     conn.close()
