@@ -79,47 +79,48 @@ body {
 }
 
 .p-4 {
-    padding: 1rem;
+	padding: 1rem;
 }
 
 .border-b {
-    border-bottom: 1px solid var(--bg-accent);
+	border-bottom: 1px solid var(--bg-accent);
 }
 
 .font-medium {
-    font-weight: 500;
+	font-weight: 500;
 }
 
 .font-bold {
-    font-weight: 700;
+	font-weight: 700;
 }
 
 .hovering-row:hover {
-    background-color: var(--item-hover-bg);
-    transition: background-color 0.2s;
+	background-color: var(--item-hover-bg);
+	transition: background-color 0.2s;
 }
 
 .btn-icon {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 1.2rem;
-    padding: 0.25rem;
-    border-radius: var(--radius-sm);
-    transition: transform 0.2s;
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	font-size: 1.2rem;
+	padding: 0.25rem;
+	border-radius: var(--radius-sm);
+	transition: transform 0.2s;
 }
 
 .btn-icon:hover {
-    transform: scale(1.1);
-    background-color: var(--bg-accent);
+	transform: scale(1.1);
+	background-color: var(--bg-accent);
 }
 
 /* Layout */
 #app {
 	width: 100%;
-	max-width: 1200px;
-	margin: 0 auto;
-	padding: var(--space-md);
+	max-width: none;
+	margin: 0;
+	padding: 0;
+	/* Remove padding for edge-to-edge */
 	flex: 1;
 }
 
@@ -307,4 +308,178 @@ body {
 		transform: translateX(0);
 		opacity: 1;
 	}
+}
+
+/* Main Layout & Sidebar */
+.main-layout {
+	height: 100vh;
+	/* Full viewport height */
+	gap: 0;
+	/* No gap between sidebar and content */
+	position: relative;
+	overflow: hidden;
+}
+
+.main-content {
+	min-width: 0;
+	/* Prevent flex child from overflowing */
+	/* Transition for width change if needed, but flex-1 handles it */
+	flex: 1;
+	overflow-y: auto;
+	/* Scrollable content area */
+	padding: var(--space-md);
+	/* Add padding inside content area instead */
+}
+
+.left-sidebar {
+	width: 280px;
+	background: var(--bg-secondary);
+	border-right: 1px solid var(--card-border);
+	/* Changed to border-right */
+	border-radius: 0;
+	/* Square edges for docked sidebar */
+	display: flex;
+	flex-direction: column;
+	transition: width 0.3s ease;
+	flex-shrink: 0;
+	overflow: hidden;
+	/* Hide content when collapsed */
+	height: 100%;
+	/* Ensure full height */
+}
+
+.left-sidebar.collapsed {
+	width: 80px;
+}
+
+/* Sidebar Elements */
+.sidebar-header {
+	height: 70px;
+	/* border-bottom: 1px solid var(--bg-accent); */
+	/* Optional separator */
+}
+
+.sidebar-logo {
+	width: 32px;
+	height: 32px;
+}
+
+.sidebar-text {
+	white-space: nowrap;
+	opacity: 1;
+	transition: opacity 0.2s;
+}
+
+.left-sidebar.collapsed .sidebar-text {
+	opacity: 0;
+	display: none;
+}
+
+.left-sidebar.collapsed .logo-container {
+	justify-content: center;
+	width: 100%;
+}
+
+.left-sidebar.collapsed .sidebar-header {
+	justify-content: center;
+	padding: 0;
+}
+
+.left-sidebar.collapsed #sidebar-toggle {
+	position: absolute;
+	top: 20px;
+	right: 50%;
+	transform: translateX(50%);
+	opacity: 0;
+	/* Hide toggle when collapsed, or maybe move it? */
+	/* Let's keep toggle visible but maybe centered or at bottom? 
+       Actually, standard pattern is toggle button stays visible.
+    */
+	display: none;
+	/* Hide default toggle, show a different one or adjust layout */
+}
+
+/* Better Toggle Approach */
+/* Overriding previous collapsed styles for better toggle visibility */
+.left-sidebar.collapsed .sidebar-header {
+	padding: 1rem 0;
+	flex-direction: column;
+	gap: 1rem;
+	height: auto;
+}
+
+.left-sidebar.collapsed #sidebar-toggle {
+	display: block;
+	position: static;
+	transform: none;
+	opacity: 1;
+}
+
+.nav-list {
+	list-style: none;
+	padding: var(--space-md) var(--space-sm);
+}
+
+.nav-item {
+	margin-bottom: var(--space-sm);
+}
+
+.nav-link {
+	display: flex;
+	align-items: center;
+	gap: var(--space-md);
+	padding: var(--space-md);
+	text-decoration: none;
+	color: var(--text-secondary);
+	border-radius: var(--radius-md);
+	transition: all 0.2s;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+.nav-link:hover,
+.nav-item.active .nav-link {
+	background: var(--bg-accent);
+	color: var(--primary);
+}
+
+.nav-icon {
+	font-size: 1.25rem;
+	min-width: 24px;
+	/* Ensure icon stays centered in collapsed mode */
+	text-align: center;
+}
+
+.left-sidebar.collapsed .nav-link {
+	justify-content: center;
+	padding: var(--space-md) 0;
+}
+
+.left-sidebar.collapsed .nav-text {
+	display: none;
+}
+
+.sidebar-footer {
+	margin-top: auto;
+}
+
+.left-sidebar.collapsed .sidebar-footer {
+	padding: var(--space-md) 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.left-sidebar.collapsed .user-profile {
+	justify-content: center;
+	margin-bottom: var(--space-md);
+}
+
+/* Dashboard Header adjustments inside main content */
+.dashboard-header {
+	margin-bottom: var(--space-lg);
+	background: var(--bg-secondary);
+	padding: var(--space-md);
+	border-radius: var(--radius-md);
+	border: 1px solid var(--card-border);
 }

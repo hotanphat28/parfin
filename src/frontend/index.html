@@ -43,129 +43,223 @@
 
             <!-- Dashboard View -->
             <div id="dashboard-view" class="hidden">
-                <header class="dashboard-header flex justify-between items-center">
-                    <div class="flex items-center gap-md">
-                        <img src="images/logo.svg" alt="ParFin Logo" style="width: 40px; height: 40px">
-                        <div>
-                            <h1 class="text-xl" data-i18n="dashboard_title">Dashboard</h1>
-                            <p class="text-secondary"><span data-i18n="welcome_user">Welcome, </span><span
-                                    id="user-display-name">User</span></p>
+                <div class="main-layout flex">
+                    <!-- Left Sidebar -->
+                    <aside class="left-sidebar" id="main-sidebar">
+                        <div class="sidebar-header flex items-center justify-between p-4">
+                            <div class="logo-container flex items-center gap-sm">
+                                <img src="images/logo.svg" alt="ParFin Logo" class="sidebar-logo">
+                                <span class="text-xl font-bold sidebar-text" data-i18n="app_name">ParFin</span>
+                            </div>
+                            <button id="sidebar-toggle" class="btn-icon">
+                                ☰
+                            </button>
                         </div>
-                    </div>
-                    <div class="flex gap-md">
-                        <button id="add-transaction-btn" class="btn btn-primary" data-i18n="add_result_btn">+ Add
-                            Transaction</button>
-                        <button id="fixed-items-btn" class="btn btn-primary" data-i18n="fixed_items_btn">Fixed
-                            Items</button>
-                        <button id="import-btn" class="btn btn-secondary" data-i18n="import_btn">Import</button>
-                        <button id="export-btn" class="btn btn-secondary" data-i18n="export_btn">Export</button>
-                        <select id="language-selector" class="btn btn-secondary" style="padding: 0.5rem">
-                            <option value="en">🇺🇸 EN</option>
-                            <option value="vi">🇻🇳 VN</option>
-                        </select>
-                        <select id="theme-selector" class="btn btn-secondary" style="padding: 0.5rem">
-                            <option value="system" data-i18n="theme_system">🌓 System</option>
-                            <option value="light" data-i18n="theme_light">☀️ Light</option>
-                            <option value="dark" data-i18n="theme_dark">🌙 Dark</option>
-                        </select>
-                        <button id="logout-btn" class="btn btn-secondary" data-i18n="logout_btn">Logout</button>
-                    </div>
-                </header>
 
-                <div class="stats-grid">
-                    <div class="card stat-card">
-                        <p class="text-secondary text-sm" data-i18n="total_balance">Total Balance</p>
-                        <h2 class="text-xl text-success" id="total-balance">0 ₫</h2>
-                        <div class="flex justify-between text-xs text-secondary mt-sm">
-                            <span>💵 <span id="balance-cash">0</span></span>
-                            <span>🏦 <span id="balance-bank">0</span></span>
-                        </div>
-                    </div>
-                    <div class="card stat-card">
-                        <p class="text-secondary text-sm" data-i18n="monthly_income">Income (Month)</p>
-                        <h2 class="text-xl text-success" id="monthly-income">0 ₫</h2>
-                    </div>
-                    <div class="card stat-card">
-                        <p class="text-secondary text-sm" data-i18n="monthly_expense">Expense (Month)</p>
-                        <h2 class="text-xl text-danger" id="monthly-expense">0 ₫</h2>
-                    </div>
-                    <div class="card stat-card">
-                        <p class="text-secondary text-sm" data-i18n="total_saving">Total Saving</p>
-                        <h2 class="text-xl text-primary" id="total-saving">0 ₫</h2>
-                        <div class="flex justify-between text-xs text-secondary mt-sm">
-                            <span>💵 <span id="saving-cash">0</span></span>
-                            <span>🏦 <span id="saving-bank">0</span></span>
-                        </div>
-                    </div>
-                    <div class="card stat-card">
-                        <p class="text-secondary text-sm" data-i18n="total_support">Total Support</p>
-                        <h2 class="text-xl text-warning" id="total-support">0 ₫</h2>
-                        <div class="flex justify-between text-xs text-secondary mt-sm">
-                            <span>💵 <span id="support-cash">0</span></span>
-                            <span>🏦 <span id="support-bank">0</span></span>
-                        </div>
-                    </div>
-                    <div class="card stat-card">
-                        <p class="text-secondary text-sm" data-i18n="total_investment">Total Investment</p>
-                        <h2 class="text-xl text-info" id="total-investment">0 ₫</h2>
-                        <div class="flex justify-between text-xs text-secondary mt-sm">
-                            <span>💵 <span id="investment-cash">0</span></span>
-                            <span>🏦 <span id="investment-bank">0</span></span>
-                        </div>
-                    </div>
-                    <div class="card stat-card">
-                        <p class="text-secondary text-sm" data-i18n="total_together">Total Together Budget</p>
-                        <h2 class="text-xl text-success" id="total-together">0 ₫</h2>
-                        <div class="flex justify-between text-xs text-secondary mt-sm">
-                            <span>💵 <span id="together-cash">0</span></span>
-                            <span>🏦 <span id="together-bank">0</span></span>
-                        </div>
-                    </div>
-                </div>
+                        <nav class="sidebar-nav flex-1">
+                            <ul class="nav-list">
+                                <li class="nav-item active" data-view="view-monthly">
+                                    <a href="#" class="nav-link">
+                                        <span class="nav-icon">📅</span>
+                                        <span class="nav-text" data-i18n="nav_monthly">Monthly</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item" data-view="view-saving">
+                                    <a href="#" class="nav-link">
+                                        <span class="nav-icon">💰</span>
+                                        <span class="nav-text" data-i18n="nav_saving">Saving</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item" data-view="view-investment">
+                                    <a href="#" class="nav-link">
+                                        <span class="nav-icon">📈</span>
+                                        <span class="nav-text" data-i18n="nav_investment">Investment</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item" data-view="view-settings">
+                                    <a href="#" class="nav-link">
+                                        <span class="nav-icon">⚙️</span>
+                                        <span class="nav-text" data-i18n="nav_settings">Settings</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
 
-                <!-- Allocation Chart -->
-                <div class="card" style="margin-bottom: var(--space-md)">
-                    <h3 class="text-lg" style="margin-bottom: var(--space-md)" data-i18n="spending_allocation">Spending
-                        Allocation</h3>
-                    <div style="height: 300px; position: relative;">
-                        <canvas id="allocation-chart"></canvas>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="flex justify-between items-center" style="margin-bottom: var(--space-md)">
-                        <h3 class="text-lg" data-i18n="recent_transactions">Recent Transactions</h3>
-                        <div class="flex gap-sm">
-                            <select class="input-field" style="width: auto; padding: 0.5rem" id="filter-type">
-                                <option value="month" data-i18n="filter_month">Month</option>
-                                <option value="all" data-i18n="filter_all">All</option>
-                            </select>
-                            <input type="month" id="filter-month" class="input-field"
-                                style="width: auto; padding: 0.5rem">
+                        <div class="sidebar-footer p-4 border-t">
+                            <div class="user-profile flex items-center gap-sm mb-4">
+                                <div
+                                    class="avatar-placeholder bg-secondary text-primary rounded-full w-8 h-8 flex items-center justify-center">
+                                    👤
+                                </div>
+                                <div class="user-info sidebar-text">
+                                    <p class="text-sm font-medium" id="sidebar-user-name">User</p>
+                                </div>
+                            </div>
+                            <button id="logout-btn"
+                                class="btn btn-secondary w-full flex items-center justify-center gap-sm">
+                                <span class="nav-icon">🚪</span>
+                                <span class="nav-text" data-i18n="logout_btn">Logout</span>
+                            </button>
                         </div>
-                    </div>
-                    <div class="transaction-list-container">
-                        <table class="w-full text-left border-collapse" id="transaction-table">
-                            <thead>
-                                <tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
-                                    <th class="p-4 font-medium" data-i18n="table_date">Date</th>
-                                    <th class="p-4 font-medium" data-i18n="table_category">Category</th>
-                                    <th class="p-4 font-medium" data-i18n="table_description">Description</th>
-                                    <th class="p-4 font-medium text-right" data-i18n="table_amount">Amount</th>
-                                    <th class="p-4 font-medium" data-i18n="table_source">Source</th>
-                                    <th class="p-4 font-medium text-right" data-i18n="table_action">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="transaction-list-body">
-                                <!-- Transactions will be injected here -->
-                                <tr>
-                                    <td colspan="6" class="p-4 text-center text-secondary"
-                                        data-i18n="loading_transactions">
-                                        Loading transactions...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    </aside>
+
+                    <!-- Main Content Area -->
+                    <main class="main-content flex-1">
+                        <header class="dashboard-header flex justify-between items-center">
+                            <div>
+                                <h1 class="text-xl" data-i18n="dashboard_title">Dashboard</h1>
+                                <p class="text-secondary" id="welcome-msg"><span data-i18n="welcome_user">Welcome,
+                                    </span><span id="user-display-name">User</span></p>
+                            </div>
+                            <!-- Transaction Actions (remain here) -->
+                            <div class="flex gap-md" id="transaction-actions">
+                                <button id="add-transaction-btn" class="btn btn-primary" data-i18n="add_result_btn">+
+                                    Add
+                                    Transaction</button>
+                                <button id="fixed-items-btn" class="btn btn-primary" data-i18n="fixed_items_btn">Fixed
+                                    Items</button>
+                                <button id="import-btn" class="btn btn-secondary" data-i18n="import_btn">Import</button>
+                                <button id="export-btn" class="btn btn-secondary" data-i18n="export_btn">Export</button>
+                            </div>
+                        </header>
+
+                        <!-- Views -->
+                        <div id="view-monthly" class="view-section">
+                            <div class="stats-grid">
+                                <div class="card stat-card">
+                                    <p class="text-secondary text-sm" data-i18n="total_balance">Total Balance</p>
+                                    <h2 class="text-xl text-success" id="total-balance">0 ₫</h2>
+                                    <div class="flex justify-between text-xs text-secondary mt-sm">
+                                        <span>💵 <span id="balance-cash">0</span></span>
+                                        <span>🏦 <span id="balance-bank">0</span></span>
+                                    </div>
+                                </div>
+                                <div class="card stat-card">
+                                    <p class="text-secondary text-sm" data-i18n="monthly_income">Income (Month)</p>
+                                    <h2 class="text-xl text-success" id="monthly-income">0 ₫</h2>
+                                </div>
+                                <div class="card stat-card">
+                                    <p class="text-secondary text-sm" data-i18n="monthly_expense">Expense (Month)</p>
+                                    <h2 class="text-xl text-danger" id="monthly-expense">0 ₫</h2>
+                                </div>
+                                <div class="card stat-card">
+                                    <p class="text-secondary text-sm" data-i18n="total_saving">Total Saving</p>
+                                    <h2 class="text-xl text-primary" id="total-saving">0 ₫</h2>
+                                    <div class="flex justify-between text-xs text-secondary mt-sm">
+                                        <span>💵 <span id="saving-cash">0</span></span>
+                                        <span>🏦 <span id="saving-bank">0</span></span>
+                                    </div>
+                                </div>
+                                <div class="card stat-card">
+                                    <p class="text-secondary text-sm" data-i18n="total_support">Total Support</p>
+                                    <h2 class="text-xl text-warning" id="total-support">0 ₫</h2>
+                                    <div class="flex justify-between text-xs text-secondary mt-sm">
+                                        <span>💵 <span id="support-cash">0</span></span>
+                                        <span>🏦 <span id="support-bank">0</span></span>
+                                    </div>
+                                </div>
+                                <div class="card stat-card">
+                                    <p class="text-secondary text-sm" data-i18n="total_investment">Total Investment</p>
+                                    <h2 class="text-xl text-info" id="total-investment">0 ₫</h2>
+                                    <div class="flex justify-between text-xs text-secondary mt-sm">
+                                        <span>💵 <span id="investment-cash">0</span></span>
+                                        <span>🏦 <span id="investment-bank">0</span></span>
+                                    </div>
+                                </div>
+                                <div class="card stat-card">
+                                    <p class="text-secondary text-sm" data-i18n="total_together">Total Together Budget
+                                    </p>
+                                    <h2 class="text-xl text-success" id="total-together">0 ₫</h2>
+                                    <div class="flex justify-between text-xs text-secondary mt-sm">
+                                        <span>💵 <span id="together-cash">0</span></span>
+                                        <span>🏦 <span id="together-bank">0</span></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Allocation Chart -->
+                            <div class="card" style="margin-bottom: var(--space-md)">
+                                <h3 class="text-lg" style="margin-bottom: var(--space-md)"
+                                    data-i18n="spending_allocation">Spending
+                                    Allocation</h3>
+                                <div style="height: 300px; position: relative;">
+                                    <canvas id="allocation-chart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="flex justify-between items-center" style="margin-bottom: var(--space-md)">
+                                    <h3 class="text-lg" data-i18n="recent_transactions">Recent Transactions</h3>
+                                    <div class="flex gap-sm">
+                                        <select class="input-field" style="width: auto; padding: 0.5rem"
+                                            id="filter-type">
+                                            <option value="month" data-i18n="filter_month">Month</option>
+                                            <option value="all" data-i18n="filter_all">All</option>
+                                        </select>
+                                        <input type="month" id="filter-month" class="input-field"
+                                            style="width: auto; padding: 0.5rem">
+                                    </div>
+                                </div>
+                                <div class="transaction-list-container">
+                                    <table class="w-full text-left border-collapse" id="transaction-table">
+                                        <thead>
+                                            <tr class="text-secondary text-sm border-b"
+                                                style="border-color: var(--bg-accent)">
+                                                <th class="p-4 font-medium" data-i18n="table_date">Date</th>
+                                                <th class="p-4 font-medium" data-i18n="table_category">Category</th>
+                                                <th class="p-4 font-medium" data-i18n="table_description">Description
+                                                </th>
+                                                <th class="p-4 font-medium text-right" data-i18n="table_amount">Amount
+                                                </th>
+                                                <th class="p-4 font-medium" data-i18n="table_source">Source</th>
+                                                <th class="p-4 font-medium text-right" data-i18n="table_action">Action
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="transaction-list-body">
+                                            <!-- Transactions will be injected here -->
+                                            <tr>
+                                                <td colspan="6" class="p-4 text-center text-secondary"
+                                                    data-i18n="loading_transactions">
+                                                    Loading transactions...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Placeholder Views -->
+                        <div id="view-saving" class="view-section hidden">
+                            <h2 class="text-xl mb-4" data-i18n="nav_saving">Saving</h2>
+                            <p class="text-secondary" data-i18n="coming_soon">Coming soon...</p>
+                        </div>
+                        <div id="view-investment" class="view-section hidden">
+                            <h2 class="text-xl mb-4" data-i18n="nav_investment">Investment</h2>
+                            <p class="text-secondary" data-i18n="coming_soon">Coming soon...</p>
+                        </div>
+                        <div id="view-settings" class="view-section hidden">
+                            <h2 class="text-xl mb-4" data-i18n="nav_settings">Settings</h2>
+                            <div class="card" style="max-width: 400px">
+                                <div class="input-group">
+                                    <label class="input-label" data-i18n="language_label">Language</label>
+                                    <select id="language-selector" class="input-field">
+                                        <option value="en">🇺🇸 English</option>
+                                        <option value="vi">🇻🇳 Tiếng Việt</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label class="input-label" data-i18n="theme_label">Theme</label>
+                                    <select id="theme-selector" class="input-field">
+                                        <option value="system" data-i18n="theme_system">🌓 System</option>
+                                        <option value="light" data-i18n="theme_light">☀️ Light</option>
+                                        <option value="dark" data-i18n="theme_dark">🌙 Dark</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+
                 </div>
             </div>
         </div>

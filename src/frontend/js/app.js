@@ -74,19 +74,44 @@ const App = {
 		fixedItemFormModal: document.getElementById('fixed-item-form-modal'),
 		fixedFormTitle: document.getElementById('fixed-form-title'),
 		fixedItemForm: document.getElementById('fixed-item-form'),
-		cancelFixedFormBtn: document.getElementById('cancel-fixed-form-btn')
+		cancelFixedFormBtn: document.getElementById('cancel-fixed-form-btn'),
+		// Sidebar Elements
+		sidebarToggle: document.getElementById('sidebar-toggle'),
+		mainSidebar: document.getElementById('main-sidebar'),
+		navItems: document.querySelectorAll('.nav-item'),
+		viewSections: document.querySelectorAll('.view-section'),
+		sidebarUserName: document.getElementById('sidebar-user-name')
 	},
 
 	init() {
 		this.applyTheme(this.state.theme);
 		this.setLanguage(this.state.currentLanguage);
 		this.bindEvents();
+		this.initSidebar();
 		this.checkAuth();
 	},
 
 	bindEvents() {
 		this.elements.loginForm.addEventListener('submit', (e) => this.handleLogin(e));
-		this.elements.logoutBtn.addEventListener('click', () => this.handleLogout());
+
+		if (this.elements.logoutBtn) {
+			this.elements.logoutBtn.addEventListener('click', () => this.handleLogout());
+		}
+
+		// Sidebar Toggle
+		this.elements.sidebarToggle.addEventListener('click', () => {
+			this.elements.mainSidebar.classList.toggle('collapsed');
+			const isCollapsed = this.elements.mainSidebar.classList.contains('collapsed');
+			localStorage.setItem('parfin_sidebar_collapsed', isCollapsed);
+		});
+
+		// Navigation
+		this.elements.navItems.forEach(item => {
+			item.addEventListener('click', (e) => {
+				e.preventDefault();
+				this.switchView(item);
+			});
+		});
 
 		this.elements.addTransactionBtn.addEventListener('click', () => {
 			this.elements.transactionForm.reset();
@@ -295,8 +320,51 @@ const App = {
 	showDashboard() {
 		this.elements.loginView.classList.add('hidden');
 		this.elements.dashboardView.classList.remove('hidden');
-		this.elements.userDisplayName.textContent = this.state.currentUser.username;
+		const username = this.state.currentUser.username;
+
+		// Update both displays if they exist
+		if (this.elements.userDisplayName) this.elements.userDisplayName.textContent = username;
+		if (this.elements.sidebarUserName) this.elements.sidebarUserName.textContent = username;
+
 		this.fetchTransactions();
+	},
+
+	initSidebar() {
+		// Restore Collapsed State
+		const isCollapsed = localStorage.getItem('parfin_sidebar_collapsed') === 'true';
+		if (isCollapsed) {
+			this.elements.mainSidebar.classList.add('collapsed');
+		}
+
+		// Restore Active View (Optional, defaulted to first in HTML)
+		// For now, let's just ensure the active class in HTML matches the visible view
+		const activeNav = document.querySelector('.nav-item.active');
+		if (activeNav) {
+			this.switchView(activeNav);
+		}
+	},
+
+	switchView(navItem) {
+		const targetViewId = navItem.dataset.view;
+
+		// Update Nav UI
+		this.elements.navItems.forEach(item => item.classList.remove('active'));
+		navItem.classList.add('active');
+
+		// Update View UI
+		this.elements.viewSections.forEach(section => {
+			if (section.id === targetViewId) {
+				section.classList.remove('hidden');
+				// section.classList.add('fade-in'); // Optional animation class
+			} else {
+				section.classList.add('hidden');
+			}
+		});
+
+		// Special handling for views if needed
+		if (targetViewId === 'view-monthly') {
+			this.updateChart(); // Resize chart if needed
+		}
 	},
 
 	async fetchTransactions() {
