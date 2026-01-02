@@ -129,7 +129,14 @@ const translations = {
 		edit_fixed_item_title: "Edit Fixed Item",
 		close_btn: "Close",
 		toast_save_success: "Saved successfully!",
-		toast_generated_success: "Transactions generated successfully"
+		edit_fixed_item_title: "Edit Fixed Item",
+		close_btn: "Close",
+		toast_save_success: "Saved successfully!",
+		toast_generated_success: "Transactions generated successfully",
+		exchange_rate_label: "Exchange Rate (1 USD = ? VND)",
+		exchange_rate_help: "Set the exchange rate for currency conversion.",
+		update_rate_btn: "Update Rate",
+		toast_rate_success: "Exchange rate updated!"
 	},
 	vi: {
 		app_title: "ParFin",
@@ -260,6 +267,13 @@ const translations = {
 		edit_fixed_item_title: "Sửa Khoản Cố Định",
 		close_btn: "Đóng",
 		toast_save_success: "Lưu thành công!",
-		toast_generated_success: "Đã tạo các giao dịch thành công"
+		edit_fixed_item_title: "Sửa Khoản Cố Định",
+		close_btn: "Đóng",
+		toast_save_success: "Lưu thành công!",
+		toast_generated_success: "Đã tạo các giao dịch thành công",
+		exchange_rate_label: "Tỷ giá (1 USD = ? VND)",
+		exchange_rate_help: "Thiết lập tỷ giá để quy đổi tiền tệ.",
+		update_rate_btn: "Cập nhật Tỷ giá",
+		toast_rate_success: "Cập nhật tỷ giá thành công!"
 	}
 };

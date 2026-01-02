@@ -11,7 +11,8 @@ const App = {
 		currentLanguage: localStorage.getItem('parfin_language') || 'en',
 		chart: null,
 		fixedItems: [],
-		balances: {} // Stores current balance state { total, saving, ... } with cash/bank split
+		balances: {}, // Stores current balance state { total, saving, ... } with cash/bank split
+		settings: {} // Stores exchange rates, etc.
 	},
 
 	elements: {
@@ -80,7 +81,10 @@ const App = {
 		mainSidebar: document.getElementById('main-sidebar'),
 		navItems: document.querySelectorAll('.nav-item'),
 		viewSections: document.querySelectorAll('.view-section'),
-		sidebarUserName: document.getElementById('sidebar-user-name')
+		sidebarUserName: document.getElementById('sidebar-user-name'),
+		// Settings Elements
+		exchangeRateInput: document.getElementById('exchange-rate-input'),
+		updateRateBtn: document.getElementById('update-rate-btn')
 	},
 
 	init() {
@@ -89,6 +93,7 @@ const App = {
 		this.bindEvents();
 		this.initSidebar();
 		this.checkAuth();
+		this.fetchSettings();
 	},
 
 	bindEvents() {
@@ -229,6 +234,12 @@ const App = {
 		const dateInput = this.elements.transactionForm.querySelector('input[name="date"]');
 		if (dateInput) {
 			dateInput.valueAsDate = new Date();
+		}
+
+
+		// Settings Events
+		if (this.elements.updateRateBtn) {
+			this.elements.updateRateBtn.addEventListener('click', () => this.handleUpdateRate());
 		}
 	},
 
@@ -397,6 +408,12 @@ const App = {
 		// Add user_id (Mocking logic, server should infer from session)
 		data.user_id = 1;
 
+		// Determine currency based on current language context if not explicitly set (which it isn't in form)
+		// If adding new: use current language currency
+		// If editing: we should probably preserve original? OR update to new?
+		// Decision: Update to current language currency because the user is seeing/editing the amount in that currency.
+		data.currency = this.state.currentLanguage === 'vi' ? 'VND' : 'USD';
+
 		const isEdit = !!data.id;
 		const url = isEdit ? '/api/transactions/update' : '/api/transactions/create';
 
@@ -447,7 +464,12 @@ const App = {
 
 		const form = this.elements.transactionForm;
 		form.id.value = transaction.id;
-		form.amount.value = transaction.amount;
+
+		// Show amount in the CURRENT display currency
+		// Because the user will edit it in their current context
+		// e.g. if transaction is 10 USD, and I am in VND mode, I want to see ~250,000 to edit.
+		const displayAmount = this.convertAmount(transaction.amount, transaction.currency);
+		form.amount.value = displayAmount;
 
 		const typeRadios = form.querySelectorAll('input[name="type"]');
 		typeRadios.forEach(radio => {
@@ -468,6 +490,49 @@ const App = {
 
 		this.elements.modalTitle.textContent = this.t('modal_edit_title');
 		this.showModal();
+	},
+
+	async fetchSettings() {
+		try {
+			const response = await fetch('/api/settings');
+			if (response.ok) {
+				const settings = await response.json();
+				this.state.settings = settings;
+
+				// Update UI if exists
+				if (this.elements.exchangeRateInput && settings.exchange_rate_usd_vnd) {
+					this.elements.exchangeRateInput.value = settings.exchange_rate_usd_vnd;
+				}
+			}
+		} catch (err) {
+			console.error('Failed to fetch settings', err);
+		}
+	},
+
+	async handleUpdateRate() {
+		const rate = this.elements.exchangeRateInput.value;
+		if (!rate) return;
+
+		try {
+			const response = await fetch('/api/settings/update', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ exchange_rate_usd_vnd: rate })
+			});
+
+			if (response.ok) {
+				this.state.settings.exchange_rate_usd_vnd = rate;
+				this.showToast(this.t('toast_rate_success'), 'success');
+				// Refresh stats/transactions to reflect new rate
+				this.renderTransactions();
+				this.updateStats();
+				this.updateChart();
+			} else {
+				this.showToast(this.t('toast_error'), 'error');
+			}
+		} catch (err) {
+			this.showToast(this.t('toast_connect_error'), 'error');
+		}
 	},
 
 	renderTransactions() {
@@ -517,7 +582,7 @@ const App = {
                     </div>
                 </td>
                 <td class="p-4 text-secondary">${t.description || '-'}</td>
-                <td class="p-4 text-right font-bold ${colorClass}">${sign} ${this.formatCurrency(t.amount)}</td>
+                <td class="p-4 text-right font-bold ${colorClass}">${sign} ${this.formatCurrency(t.amount, t.currency)}</td>
                 <td class="p-4 text-secondary">
 					${sourceName}${destName}
 					${fundBadge}
@@ -554,10 +619,12 @@ const App = {
 
 		// Helper to ensure source is valid
 		const getSource = (source) => source === 'bank' ? 'bank' : 'cash';
+		const fromCurrency = 'VND'; // Hardcoded base currency for now as DB defaults to VND
 
 		transactions.forEach(t => {
 			const source = getSource(t.source);
-			const amount = t.amount;
+			// Convert amount to the target display currency for aggregation
+			const amount = this.convertAmount(t.amount, t.currency || fromCurrency);
 
 			// --- Monthly Stats ---
 			if (t.type === 'income') {
@@ -626,33 +693,37 @@ const App = {
 		const totalInvestmentVal = investment.cash + investment.bank;
 		const totalTogetherVal = together.cash + together.bank;
 
-		// Update DOM
-		this.elements.totalBalance.textContent = this.formatCurrency(totalBalanceVal);
-		this.elements.balanceCash.textContent = this.formatCurrency(total.cash);
-		this.elements.balanceBank.textContent = this.formatCurrency(total.bank);
+		const targetCurrency = this.state.currentLanguage === 'vi' ? 'VND' : 'USD';
 
-		this.elements.monthlyIncome.textContent = this.formatCurrency(monthlyIncome);
-		this.elements.monthlyExpense.textContent = this.formatCurrency(monthlyExpense);
+		// Update DOM
+		// Note: The values are ALREADY in the target currency, so we pass targetCurrency as the 'from' currency
+		// to prevent double conversion in formatCurrency
+		this.elements.totalBalance.textContent = this.formatCurrency(totalBalanceVal, targetCurrency);
+		this.elements.balanceCash.textContent = this.formatCurrency(total.cash, targetCurrency);
+		this.elements.balanceBank.textContent = this.formatCurrency(total.bank, targetCurrency);
+
+		this.elements.monthlyIncome.textContent = this.formatCurrency(monthlyIncome, targetCurrency);
+		this.elements.monthlyExpense.textContent = this.formatCurrency(monthlyExpense, targetCurrency);
 
 		if (this.elements.totalSaving) {
-			this.elements.totalSaving.textContent = this.formatCurrency(totalSavingVal);
-			this.elements.savingCash.textContent = this.formatCurrency(saving.cash);
-			this.elements.savingBank.textContent = this.formatCurrency(saving.bank);
+			this.elements.totalSaving.textContent = this.formatCurrency(totalSavingVal, targetCurrency);
+			this.elements.savingCash.textContent = this.formatCurrency(saving.cash, targetCurrency);
+			this.elements.savingBank.textContent = this.formatCurrency(saving.bank, targetCurrency);
 		}
 		if (this.elements.totalSupport) {
-			this.elements.totalSupport.textContent = this.formatCurrency(totalSupportVal);
-			this.elements.supportCash.textContent = this.formatCurrency(support.cash);
-			this.elements.supportBank.textContent = this.formatCurrency(support.bank);
+			this.elements.totalSupport.textContent = this.formatCurrency(totalSupportVal, targetCurrency);
+			this.elements.supportCash.textContent = this.formatCurrency(support.cash, targetCurrency);
+			this.elements.supportBank.textContent = this.formatCurrency(support.bank, targetCurrency);
 		}
 		if (this.elements.totalInvestment) {
-			this.elements.totalInvestment.textContent = this.formatCurrency(totalInvestmentVal);
-			this.elements.investmentCash.textContent = this.formatCurrency(investment.cash);
-			this.elements.investmentBank.textContent = this.formatCurrency(investment.bank);
+			this.elements.totalInvestment.textContent = this.formatCurrency(totalInvestmentVal, targetCurrency);
+			this.elements.investmentCash.textContent = this.formatCurrency(investment.cash, targetCurrency);
+			this.elements.investmentBank.textContent = this.formatCurrency(investment.bank, targetCurrency);
 		}
 		if (this.elements.totalTogether) {
-			this.elements.totalTogether.textContent = this.formatCurrency(totalTogetherVal);
-			this.elements.togetherCash.textContent = this.formatCurrency(together.cash);
-			this.elements.togetherBank.textContent = this.formatCurrency(together.bank);
+			this.elements.totalTogether.textContent = this.formatCurrency(totalTogetherVal, targetCurrency);
+			this.elements.togetherCash.textContent = this.formatCurrency(together.cash, targetCurrency);
+			this.elements.togetherBank.textContent = this.formatCurrency(together.bank, targetCurrency);
 		}
 
 		// Store balances in state for form logic
@@ -680,7 +751,9 @@ const App = {
 				categoryData[t.category] = { cash: 0, bank: 0 };
 			}
 			const source = t.source === 'bank' ? 'bank' : 'cash';
-			categoryData[t.category][source] += t.amount;
+			// Convert!
+			const amount = this.convertAmount(t.amount, t.currency || 'VND');
+			categoryData[t.category][source] += amount;
 		});
 
 		const labels = Object.keys(categoryData).map(cat => this.getCategoryName(cat));
@@ -729,7 +802,8 @@ const App = {
 									label += ': ';
 								}
 								if (context.parsed.y !== null) {
-									label += this.formatCurrency(context.parsed.y);
+									const targetCurrency = this.state.currentLanguage === 'vi' ? 'VND' : 'USD';
+									label += this.formatCurrency(context.parsed.y, targetCurrency);
 								}
 								return label;
 							}
@@ -740,10 +814,29 @@ const App = {
 		});
 	},
 
-	formatCurrency(amount) {
+	convertAmount(amount, fromCurrency = 'VND') {
+		const targetCurrency = this.state.currentLanguage === 'vi' ? 'VND' : 'USD';
+
+		// If same currency, return as is
+		if (fromCurrency === targetCurrency) return amount;
+
+		// Get Rate (Default 25000 if not set)
+		const rate = parseFloat(this.state.settings.exchange_rate_usd_vnd) || 25000;
+
+		if (fromCurrency === 'VND' && targetCurrency === 'USD') {
+			return amount / rate;
+		} else if (fromCurrency === 'USD' && targetCurrency === 'VND') {
+			return amount * rate;
+		}
+
+		return amount; // Fallback
+	},
+
+	formatCurrency(amount, fromCurrency = 'VND') {
+		const convertedAmount = this.convertAmount(amount, fromCurrency);
 		const locale = this.state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
 		const currency = this.state.currentLanguage === 'vi' ? 'VND' : 'USD';
-		return new Intl.NumberFormat(locale, { style: 'currency', currency: 'VND' }).format(amount);
+		return new Intl.NumberFormat(locale, { style: 'currency', currency: currency }).format(convertedAmount);
 	},
 
 	getCategoryIcon(category) {

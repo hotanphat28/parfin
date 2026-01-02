@@ -79,6 +79,13 @@ def init_db():
         print("Migrating database: Adding fund column to transactions table...")
         c.execute("ALTER TABLE transactions ADD COLUMN fund TEXT DEFAULT NULL")
 
+    # Migration: Add currency column if it doesn't exist
+    try:
+        c.execute('SELECT currency FROM transactions LIMIT 1')
+    except sqlite3.OperationalError:
+        print("Migrating database: Adding currency column to transactions table...")
+        c.execute("ALTER TABLE transactions ADD COLUMN currency TEXT DEFAULT 'VND'")
+
     # Create Fixed Items Table
     c.execute('''
         CREATE TABLE IF NOT EXISTS fixed_items (
@@ -101,6 +108,20 @@ def init_db():
     except sqlite3.OperationalError:
         print("Migrating database: Adding fund column to fixed_items table...")
         c.execute("ALTER TABLE fixed_items ADD COLUMN fund TEXT DEFAULT NULL")
+
+    # Create Settings Table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+    ''')
+
+    # Initialize default exchange rate if not exists
+    c.execute('SELECT value FROM settings WHERE key = ?', ('exchange_rate_usd_vnd',))
+    if not c.fetchone():
+        c.execute("INSERT INTO settings (key, value) VALUES (?, ?)", ('exchange_rate_usd_vnd', '25000'))
+        print("Initialized default exchange rate: 1 USD = 25000 VND")
 
     conn.commit()
     conn.close()

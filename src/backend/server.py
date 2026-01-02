@@ -189,6 +189,15 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
              self._set_headers(200)
              self.wfile.write(json.dumps(result).encode())
 
+        elif path == '/api/settings':
+             # Fetch all settings
+             rows = query_db('SELECT * FROM settings')
+             settings = {row['key']: row['value'] for row in rows}
+             
+             self._set_headers(200)
+             self.wfile.write(json.dumps(settings).encode())
+
+
         else:
              self._set_headers(404)
              self.wfile.write(json.dumps({"error": "Endpoint not found"}).encode())
@@ -243,6 +252,7 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             category = data.get('category')
             description = data.get('description', '')
             date = data.get('date')
+            currency = data.get('currency', 'VND')
             
             source = data.get('source', 'cash')
             destination = data.get('destination')
@@ -251,9 +261,9 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             conn = get_db_connection()
             c = conn.cursor()
             c.execute('''
-                INSERT INTO transactions (user_id, amount, type, category, description, source, destination, fund, date)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (user_id, amount, trans_type, category, description, source, destination, fund, date))
+                INSERT INTO transactions (user_id, amount, currency, type, category, description, source, destination, fund, date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, amount, currency, trans_type, category, description, source, destination, fund, date))
             conn.commit()
             conn.close()
             
@@ -271,14 +281,15 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             destination = data.get('destination')
             fund = data.get('fund')
             date = data.get('date')
+            currency = data.get('currency', 'VND')
             
             conn = get_db_connection()
             c = conn.cursor()
             c.execute('''
                 UPDATE transactions 
-                SET amount = ?, type = ?, category = ?, description = ?, source = ?, destination = ?, fund = ?, date = ?
+                SET amount = ?, currency = ?, type = ?, category = ?, description = ?, source = ?, destination = ?, fund = ?, date = ?
                 WHERE id = ?
-            ''', (amount, trans_type, category, description, source, destination, fund, date, trans_id))
+            ''', (amount, currency, trans_type, category, description, source, destination, fund, date, trans_id))
             conn.commit()
             conn.close()
             
@@ -446,6 +457,31 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             
             self._set_headers(201)
             self.wfile.write(json.dumps({"success": True, "count": count}).encode())
+
+        elif path == '/api/settings/update':
+            # Update settings. Expects data to be a dict of key-value pairs
+            # e.g. { "exchange_rate_usd_vnd": "24500" }
+            
+            try:
+                conn = get_db_connection()
+                c = conn.cursor()
+                
+                for key, value in data.items():
+                    # Upsert logic
+                    c.execute('''
+                        INSERT INTO settings (key, value) VALUES (?, ?)
+                        ON CONFLICT(key) DO UPDATE SET value=excluded.value
+                    ''', (key, str(value)))
+                    
+                conn.commit()
+                conn.close()
+                
+                self._set_headers(200)
+                self.wfile.write(json.dumps({"success": True}).encode())
+            except Exception as e:
+                print(f"Settings update error: {e}")
+                self._set_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
 
         else:
             self._set_headers(404)
