@@ -43,7 +43,7 @@ parfin/
 │   └── scripts/            # Utility scripts (e.g., mock data generator)
 ├── tests/                  # Verification and performance tests
 ├── run.py                  # Application entry point
-├── README.md               # Project documentation
+├── README.md               # Product documentation
 └── LICENSE                 # MIT License
 ```
 
@@ -117,7 +117,7 @@ The application supports importing and exporting data to facilitate backups and 
 
 ## Testing
 
-The project includes scripts to verify API functionality and test performance.
+The product includes scripts to verify API functionality and test performance.
 
 ### Functional Testing
 
@@ -135,7 +135,7 @@ The `verify_api.py` script covers:
 
 ### Performance Testing
 
-The project also includes a script to test load and concurrency.
+The product also includes a script to test load and concurrency.
 
 1.  **Start the Server**: Ensure the application is running.
 2.  **Run the Performance Test**:
@@ -157,4 +157,4 @@ This product was created with **Antigravity** and **Google Gemini 3 Pro**.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This product is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
