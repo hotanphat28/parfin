@@ -125,64 +125,79 @@
 
                         <!-- Views -->
                         <div id="view-monthly" class="view-section">
-                            <div class="stats-grid">
-                                <div class="card stat-card">
-                                    <p class="text-secondary text-sm" data-i18n="total_balance">Total Balance</p>
-                                    <h2 class="text-xl text-success" id="total-balance">0 ₫</h2>
-                                    <div class="flex justify-between text-xs text-secondary mt-sm">
-                                        <span>💵 <span id="balance-cash">0</span></span>
-                                        <span>🏦 <span id="balance-bank">0</span></span>
+                            <!-- New Dashboard Overview Layout -->
+                            <div class="dashboard-overview">
+                                <!-- Left Column: Hero Stats -->
+                                <div class="stats-hero">
+                                    <div class="card stat-card hero-card">
+                                        <p class="text-secondary text-sm" data-i18n="total_together">Total Together
+                                            Budget
+                                        </p>
+                                        <h2 class="text-xxl text-success" id="total-together">0 ₫</h2>
+                                        <div class="flex justify-between text-sm text-secondary mt-md">
+                                            <span>💵 <span id="together-cash">0</span></span>
+                                            <span>🏦 <span id="together-bank">0</span></span>
+                                        </div>
+                                    </div>
+                                    <div class="card stat-card hero-card">
+                                        <p class="text-secondary text-sm" data-i18n="monthly_expense">Expense (Month)
+                                        </p>
+                                        <h2 class="text-xxl text-danger" id="monthly-expense">0 ₫</h2>
                                     </div>
                                 </div>
-                                <div class="card stat-card">
-                                    <p class="text-secondary text-sm" data-i18n="monthly_income">Income (Month)</p>
-                                    <h2 class="text-xl text-success" id="monthly-income">0 ₫</h2>
-                                </div>
-                                <div class="card stat-card">
-                                    <p class="text-secondary text-sm" data-i18n="monthly_expense">Expense (Month)</p>
-                                    <h2 class="text-xl text-danger" id="monthly-expense">0 ₫</h2>
-                                </div>
-                                <div class="card stat-card">
-                                    <p class="text-secondary text-sm" data-i18n="total_saving">Total Saving</p>
-                                    <h2 class="text-xl text-primary" id="total-saving">0 ₫</h2>
-                                    <div class="flex justify-between text-xs text-secondary mt-sm">
-                                        <span>💵 <span id="saving-cash">0</span></span>
-                                        <span>🏦 <span id="saving-bank">0</span></span>
+
+                                <!-- Right Column: Secondary Stats Grid -->
+                                <div class="stats-secondary">
+                                    <div class="card stat-card">
+                                        <p class="text-secondary text-sm" data-i18n="total_balance">Total Balance</p>
+                                        <h2 class="text-xl text-success" id="total-balance">0 ₫</h2>
+                                        <div class="flex justify-between text-xs text-secondary mt-sm">
+                                            <span>💵 <span id="balance-cash">0</span></span>
+                                            <span>🏦 <span id="balance-bank">0</span></span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="card stat-card">
-                                    <p class="text-secondary text-sm" data-i18n="total_support">Total Support</p>
-                                    <h2 class="text-xl text-warning" id="total-support">0 ₫</h2>
-                                    <div class="flex justify-between text-xs text-secondary mt-sm">
-                                        <span>💵 <span id="support-cash">0</span></span>
-                                        <span>🏦 <span id="support-bank">0</span></span>
+                                    <div class="card stat-card">
+                                        <p class="text-secondary text-sm" data-i18n="monthly_income">Income (Month)</p>
+                                        <h2 class="text-xl text-success" id="monthly-income">0 ₫</h2>
                                     </div>
-                                </div>
-                                <div class="card stat-card">
-                                    <p class="text-secondary text-sm" data-i18n="total_investment">Total Investment</p>
-                                    <h2 class="text-xl text-info" id="total-investment">0 ₫</h2>
-                                    <div class="flex justify-between text-xs text-secondary mt-sm">
-                                        <span>💵 <span id="investment-cash">0</span></span>
-                                        <span>🏦 <span id="investment-bank">0</span></span>
+
+                                    <div class="card stat-card">
+                                        <p class="text-secondary text-sm" data-i18n="total_saving">Total Saving</p>
+                                        <h2 class="text-xl text-primary" id="total-saving">0 ₫</h2>
+                                        <div class="flex justify-between text-xs text-secondary mt-sm">
+                                            <span>💵 <span id="saving-cash">0</span></span>
+                                            <span>🏦 <span id="saving-bank">0</span></span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="card stat-card">
-                                    <p class="text-secondary text-sm" data-i18n="total_together">Total Together Budget
-                                    </p>
-                                    <h2 class="text-xl text-success" id="total-together">0 ₫</h2>
-                                    <div class="flex justify-between text-xs text-secondary mt-sm">
-                                        <span>💵 <span id="together-cash">0</span></span>
-                                        <span>🏦 <span id="together-bank">0</span></span>
+                                    <div class="card stat-card">
+                                        <p class="text-secondary text-sm" data-i18n="total_support">Total Support</p>
+                                        <h2 class="text-xl text-warning" id="total-support">0 ₫</h2>
+                                        <div class="flex justify-between text-xs text-secondary mt-sm">
+                                            <span>💵 <span id="support-cash">0</span></span>
+                                            <span>🏦 <span id="support-bank">0</span></span>
+                                        </div>
+                                    </div>
+                                    <div class="card stat-card">
+                                        <p class="text-secondary text-sm" data-i18n="total_investment">Total Investment
+                                        </p>
+                                        <h2 class="text-xl text-info" id="total-investment">0 ₫</h2>
+                                        <div class="flex justify-between text-xs text-secondary mt-sm">
+                                            <span>💵 <span id="investment-cash">0</span></span>
+                                            <span>🏦 <span id="investment-bank">0</span></span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Allocation Chart -->
                             <div class="card" style="margin-bottom: var(--space-md)">
-                                <h3 class="text-lg" style="margin-bottom: var(--space-md)"
-                                    data-i18n="spending_allocation">Spending
-                                    Allocation</h3>
-                                <div style="height: 300px; position: relative;">
+                                <div class="flex justify-between items-center" style="margin-bottom: var(--space-md)">
+                                    <h3 class="text-lg" data-i18n="expense_chart">Expense Chart</h3>
+                                    <button id="toggle-chart-btn" class="btn-icon">
+                                        👁️
+                                    </button>
+                                </div>
+                                <div id="chart-container" style="height: 300px; position: relative;">
                                     <canvas id="allocation-chart"></canvas>
                                 </div>
                             </div>
@@ -205,11 +220,18 @@
                                         <thead>
                                             <tr class="text-secondary text-sm border-b"
                                                 style="border-color: var(--bg-accent)">
-                                                <th class="p-4 font-medium" data-i18n="table_date">Date</th>
+                                                <th class="p-4 font-medium cursor-pointer hover-accent"
+                                                    data-sort="date">
+                                                    <span data-i18n="table_date">Date</span> <span
+                                                        class="sort-icon"></span>
+                                                </th>
                                                 <th class="p-4 font-medium" data-i18n="table_category">Category</th>
                                                 <th class="p-4 font-medium" data-i18n="table_description">Description
                                                 </th>
-                                                <th class="p-4 font-medium text-right" data-i18n="table_amount">Amount
+                                                <th class="p-4 font-medium text-right cursor-pointer hover-accent"
+                                                    data-sort="amount">
+                                                    <span data-i18n="table_amount">Amount</span> <span
+                                                        class="sort-icon"></span>
                                                 </th>
                                                 <th class="p-4 font-medium" data-i18n="table_source">Source</th>
                                                 <th class="p-4 font-medium text-right" data-i18n="table_action">Action
@@ -336,7 +358,7 @@
                     <!-- 5. Amount -->
                     <div class="input-group">
                         <label class="input-label" data-i18n="amount_label">Amount (VND)</label>
-                        <input type="number" name="amount" class="input-field" required min="0" step="1000">
+                        <input type="number" name="amount" class="input-field" required min="0" step="0.01">
                     </div>
 
                     <!-- 6. Use Fund -->
@@ -513,7 +535,7 @@
 
                     <div class="input-group">
                         <label class="input-label" data-i18n="amount_label">Amount</label>
-                        <input type="number" name="amount" class="input-field" required min="0" step="1000">
+                        <input type="number" name="amount" class="input-field" required min="0" step="0.01">
                     </div>
 
                     <!-- Use Fund -->

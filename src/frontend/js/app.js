@@ -12,7 +12,8 @@ const App = {
 		chart: null,
 		fixedItems: [],
 		balances: {}, // Stores current balance state { total, saving, ... } with cash/bank split
-		settings: {} // Stores exchange rates, etc.
+		settings: {}, // Stores exchange rates, etc.
+		sortParams: { field: 'date', direction: 'desc' } // Default sort: Date Newest
 	},
 
 	elements: {
@@ -84,7 +85,10 @@ const App = {
 		sidebarUserName: document.getElementById('sidebar-user-name'),
 		// Settings Elements
 		exchangeRateInput: document.getElementById('exchange-rate-input'),
-		updateRateBtn: document.getElementById('update-rate-btn')
+		updateRateBtn: document.getElementById('update-rate-btn'),
+		// Chart Elements
+		chartContainer: document.getElementById('chart-container'),
+		toggleChartBtn: document.getElementById('toggle-chart-btn')
 	},
 
 	init() {
@@ -241,6 +245,36 @@ const App = {
 		if (this.elements.updateRateBtn) {
 			this.elements.updateRateBtn.addEventListener('click', () => this.handleUpdateRate());
 		}
+
+		// Chart Toggle
+		if (this.elements.toggleChartBtn) {
+			this.elements.toggleChartBtn.addEventListener('click', () => {
+				const isHidden = this.elements.chartContainer.classList.contains('hidden');
+				if (isHidden) {
+					this.elements.chartContainer.classList.remove('hidden');
+					this.elements.toggleChartBtn.textContent = '👁️';
+					this.updateChart(); // Re-render if showing
+				} else {
+					this.elements.chartContainer.classList.add('hidden');
+					this.elements.toggleChartBtn.textContent = '🔒'; // Or eye-slash
+				}
+				localStorage.setItem('parfin_chart_visible', !isHidden);
+			});
+		}
+
+		// Restore chart state
+		const isChartVisible = localStorage.getItem('parfin_chart_visible') !== 'false'; // Default true
+		if (!isChartVisible) {
+			this.elements.chartContainer.classList.add('hidden');
+			if (this.elements.toggleChartBtn) this.elements.toggleChartBtn.textContent = '🔒';
+		}
+
+		// Sort Events
+		document.querySelectorAll('th[data-sort]').forEach(th => {
+			th.addEventListener('click', () => {
+				this.handleSort(th.dataset.sort);
+			});
+		});
 	},
 
 	t(key) {
@@ -468,7 +502,17 @@ const App = {
 		// Show amount in the CURRENT display currency
 		// Because the user will edit it in their current context
 		// e.g. if transaction is 10 USD, and I am in VND mode, I want to see ~250,000 to edit.
-		const displayAmount = this.convertAmount(transaction.amount, transaction.currency);
+		let displayAmount = this.convertAmount(transaction.amount, transaction.currency);
+
+		// Rounding Logic:
+		// If Vietnam (VND), usually no decimals.
+		// If English (USD), 2 decimals.
+		if (this.state.currentLanguage === 'vi') {
+			displayAmount = Math.round(displayAmount);
+		} else {
+			displayAmount = parseFloat(displayAmount.toFixed(2));
+		}
+
 		form.amount.value = displayAmount;
 
 		const typeRadios = form.querySelectorAll('input[name="type"]');
@@ -503,6 +547,14 @@ const App = {
 				if (this.elements.exchangeRateInput && settings.exchange_rate_usd_vnd) {
 					this.elements.exchangeRateInput.value = settings.exchange_rate_usd_vnd;
 				}
+
+				// CRITICAL FIX: Refresh dynamic content that depends on settings (like exchange rate)
+				// This fixes the race condition where transactions render before settings are loaded on page refresh
+				if (this.state.transactions.length > 0) {
+					this.renderTransactions();
+					this.updateStats();
+					this.updateChart();
+				}
 			}
 		} catch (err) {
 			console.error('Failed to fetch settings', err);
@@ -536,44 +588,85 @@ const App = {
 	},
 
 	renderTransactions() {
-		const tbody = this.elements.transactionListBody;
-		tbody.innerHTML = '';
+		try {
+			const tbody = this.elements.transactionListBody;
+			if (!tbody) return;
+			tbody.innerHTML = '';
 
-		if (this.state.transactions.length === 0) {
-			tbody.innerHTML = `<tr><td colspan="6" class="text-center text-secondary" style="padding: 2rem">${this.t('no_transactions')}</td></tr>`;
-			return;
-		}
+			const transactions = Array.isArray(this.state.transactions) ? this.state.transactions : [];
 
-		const locale = this.state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
-
-		this.state.transactions.forEach(t => {
-			const tr = document.createElement('tr');
-			tr.className = 'border-b text-sm hovering-row';
-			tr.style.borderColor = 'var(--bg-accent)';
-
-			const isExpense = t.type === 'expense';
-			const sign = isExpense ? '-' : '+';
-			const colorClass = isExpense ? 'text-danger' : 'text-success';
-			const categoryName = this.getCategoryName(t.category);
-
-			const sourceName = this.t(t.source === 'bank' ? 'source_bank' : 'source_cash');
-			let destName = '';
-			if (t.type === 'allocation' && t.category === 'Transfer') {
-				destName = ' ➔ ' + this.t(t.destination === 'bank' ? 'source_bank' : 'source_cash');
+			if (transactions.length === 0) {
+				tbody.innerHTML = `<tr><td colspan="6" class="text-center text-secondary" style="padding: 2rem">${this.t('no_transactions')}</td></tr>`;
+				return;
 			}
 
-			// Fund display
-			let fundBadge = '';
-			if (t.fund) {
-				const fundKey = `fund_${t.fund.toLowerCase()}`;
-				const fundLabel = this.t(fundKey);
-				fundBadge = `<span class="badge badge-info" style="margin-left: 0.5rem; font-size: 0.75rem;">${fundLabel}</span>`;
-			} else if (t.type === 'allocation' && t.category === 'Transfer') {
-				// Badge for transfer
-				fundBadge = `<span class="badge badge-warning" style="margin-left: 0.5rem; font-size: 0.75rem;">Transfer</span>`;
-			}
+			const locale = this.state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
 
-			tr.innerHTML = `
+			// Sort transactions
+			const sortParams = this.state.sortParams || { field: 'date', direction: 'desc' };
+			const { field, direction } = sortParams;
+
+			const sortedTransactions = [...transactions].sort((a, b) => {
+				if (!a || !b) return 0;
+				if (field === 'date') {
+					const dateA = new Date(a.date);
+					const dateB = new Date(b.date);
+					if (isNaN(dateA)) return 1; // Push invalid dates to bottom
+					if (isNaN(dateB)) return -1;
+					if (dateA < dateB) return direction === 'asc' ? -1 : 1;
+					if (dateA > dateB) return direction === 'asc' ? 1 : -1;
+					// Secondary sort by ID (Time proxy)
+					return direction === 'asc' ? ((a.id || 0) - (b.id || 0)) : ((b.id || 0) - (a.id || 0));
+				}
+				if (field === 'amount') {
+					// Sort by absolute amount magnitude
+					return direction === 'asc' ? (a.amount - b.amount) : (b.amount - a.amount);
+				}
+				return 0;
+			});
+
+			// Update Sort Icons
+			document.querySelectorAll('th[data-sort]').forEach(th => {
+				const sortField = th.dataset.sort;
+				const icon = th.querySelector('.sort-icon');
+				if (sortField === field) {
+					icon.textContent = direction === 'asc' ? ' ↑' : ' ↓';
+					th.classList.add('text-primary'); // Highlight active sort
+				} else {
+					icon.textContent = '';
+					th.classList.remove('text-primary');
+				}
+			});
+
+
+			sortedTransactions.forEach(t => {
+				const tr = document.createElement('tr');
+				tr.className = 'border-b text-sm hovering-row';
+				tr.style.borderColor = 'var(--bg-accent)';
+
+				const isExpense = t.type === 'expense';
+				const sign = isExpense ? '-' : '+';
+				const colorClass = isExpense ? 'text-danger' : 'text-success';
+				const categoryName = this.getCategoryName(t.category);
+
+				const sourceName = this.t(t.source === 'bank' ? 'source_bank' : 'source_cash');
+				let destName = '';
+				if (t.type === 'allocation' && t.category === 'Transfer') {
+					destName = ' ➔ ' + this.t(t.destination === 'bank' ? 'source_bank' : 'source_cash');
+				}
+
+				// Fund display
+				let fundBadge = '';
+				if (t.fund) {
+					const fundKey = `fund_${t.fund.toLowerCase()}`;
+					const fundLabel = this.t(fundKey);
+					fundBadge = `<span class="badge badge-info" style="margin-left: 0.5rem; font-size: 0.75rem;">${fundLabel}</span>`;
+				} else if (t.type === 'allocation' && t.category === 'Transfer') {
+					// Badge for transfer
+					fundBadge = `<span class="badge badge-warning" style="margin-left: 0.5rem; font-size: 0.75rem;">Transfer</span>`;
+				}
+
+				tr.innerHTML = `
                 <td class="p-4">${new Date(t.date).toLocaleDateString(locale)}</td>
                 <td class="p-4">
                     <div class="flex items-center gap-sm">
@@ -584,24 +677,42 @@ const App = {
                 <td class="p-4 text-secondary">${t.description || '-'}</td>
                 <td class="p-4 text-right font-bold ${colorClass}">${sign} ${this.formatCurrency(t.amount, t.currency)}</td>
                 <td class="p-4 text-secondary">
-					${sourceName}${destName}
-					${fundBadge}
+					<div class="flex items-center">
+						<span class="text-xs">${sourceName}${destName}</span>
+						${fundBadge}
+					</div>
 				</td>
                 <td class="p-4 text-right">
                     <button class="btn-icon edit-btn" data-id="${t.id}" style="margin-right: 0.5rem">✏️</button>
                     <button class="btn-icon delete-btn" data-id="${t.id}">🗑️</button>
                 </td>
             `;
-			tbody.appendChild(tr);
-		});
+				tbody.appendChild(tr);
+			});
 
-		// Delegate events
-		tbody.querySelectorAll('.edit-btn').forEach(btn => {
-			btn.addEventListener('click', () => this.editTransaction(parseInt(btn.dataset.id)));
-		});
-		tbody.querySelectorAll('.delete-btn').forEach(btn => {
-			btn.addEventListener('click', () => this.deleteTransaction(parseInt(btn.dataset.id)));
-		});
+			// Delegate events
+			tbody.querySelectorAll('.edit-btn').forEach(btn => {
+				btn.addEventListener('click', () => this.editTransaction(parseInt(btn.dataset.id)));
+			});
+			tbody.querySelectorAll('.delete-btn').forEach(btn => {
+				btn.addEventListener('click', () => this.deleteTransaction(parseInt(btn.dataset.id)));
+			});
+		} catch (err) {
+			console.error('Error rendering transactions:', err);
+			if (this.elements.transactionListBody) {
+				this.elements.transactionListBody.innerHTML = `<tr><td colspan="6" class="text-danger text-center p-4">Error loading transactions. Please refresh.</td></tr>`;
+			}
+		}
+	},
+
+	handleSort(field) {
+		if (this.state.sortParams.field === field) {
+			this.state.sortParams.direction = this.state.sortParams.direction === 'asc' ? 'desc' : 'asc';
+		} else {
+			this.state.sortParams.field = field;
+			this.state.sortParams.direction = 'desc';
+		}
+		this.renderTransactions();
 	},
 
 	updateStats() {

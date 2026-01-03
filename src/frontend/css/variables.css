@@ -15,7 +15,12 @@
 
     --text-primary: var(--color-black);
     --text-secondary: var(--color-dark-gray);
-    --text-accent: var(--color-golden);
+    --text-accent: #B45309;
+    /* Dark Amber for readability on white */
+    --text-on-primary: var(--color-black);
+    /* Black text on Golden button */
+    --text-warning-readable: #B45309;
+    /* Dark Amber */
 
     --primary: var(--color-golden);
     --primary-hover: #e5b300;
@@ -24,6 +29,22 @@
     --success: #10b981;
     --danger: #ef4444;
     --warning: var(--color-golden);
+
+    /* Text Colors for Contrast */
+    --text-success: #059669;
+    /* Darker Emerald for text on white */
+    --text-danger: #dc2626;
+    /* Darker Red for text on white */
+
+    /* Semantic Badge Colors */
+    --badge-info-bg: rgba(59, 130, 246, 0.1);
+    --badge-info-text: #3b82f6;
+    --badge-info-border: rgba(59, 130, 246, 0.2);
+
+    --badge-warning-bg: rgba(245, 158, 11, 0.1);
+    --badge-warning-text: #B45309;
+    /* Dark Amber */
+    --badge-warning-border: rgba(245, 158, 11, 0.2);
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, var(--color-golden) 0%, #FDB931 100%);
@@ -74,6 +95,15 @@
     --card-border: rgba(255, 255, 255, 0.05);
     --card-border-hover: rgba(255, 201, 14, 0.3);
     --item-hover-bg: rgba(255, 255, 255, 0.05);
+
+    /* Dark Mode Contrast Overrides */
+    --text-accent: var(--color-golden);
+    /* Bright Gold is readable on Dark */
+    --text-warning-readable: var(--color-golden);
+
+    --badge-info-text: #60a5fa;
+    /* Lighter blue for dark mode */
+    --badge-warning-text: var(--color-golden);
 }
 
 /* Dark Mode Override - System Preference (when not overridden to light) */
@@ -94,5 +124,12 @@
         --card-border: rgba(255, 255, 255, 0.05);
         --card-border-hover: rgba(255, 201, 14, 0.3);
         --item-hover-bg: rgba(255, 255, 255, 0.05);
+
+        /* Dark Mode Contrast Overrides */
+        --text-accent: var(--color-golden);
+        --text-warning-readable: var(--color-golden);
+
+        --badge-info-text: #60a5fa;
+        --badge-warning-text: var(--color-golden);
     }
 }
