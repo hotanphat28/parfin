@@ -129,6 +129,10 @@ const App = {
 			if (dateInput) dateInput.valueAsDate = new Date();
 			this.elements.modalTitle.textContent = this.t('modal_add_title');
 
+			// Clear target datasets to prevent pollution
+			delete this.elements.transactionForm.dataset.targetFund;
+			delete this.elements.transactionForm.dataset.targetSource;
+
 			// Initialize category/destination state for default (Expense)
 			this.updateTransactionFormState();
 
@@ -520,9 +524,12 @@ const App = {
 			radio.checked = radio.value === transaction.type;
 		});
 
-		// Trigger state update to show/hide fields
-		this.updateTransactionFormState();
+		// Set intended target values in dataset to ensure they are preserved during option rebuilding
+		// even if they don't currently exist in the DOM or are filtered out by default logic.
+		form.dataset.targetFund = transaction.fund || '';
+		form.dataset.targetSource = transaction.source || 'cash';
 
+		// Set form values FIRST
 		form.category.value = transaction.category;
 		form.description.value = transaction.description || '';
 		form.date.value = transaction.date;
@@ -532,9 +539,13 @@ const App = {
 		}
 		form.fund.value = transaction.fund || '';
 
+		// Trigger state update to show/hide fields and populate options (will use dataset values)
+		this.updateTransactionFormState();
+
 		this.elements.modalTitle.textContent = this.t('modal_edit_title');
 		this.showModal();
 	},
+
 
 	async fetchSettings() {
 		try {
@@ -645,8 +656,14 @@ const App = {
 				tr.style.borderColor = 'var(--bg-accent)';
 
 				const isExpense = t.type === 'expense';
-				const sign = isExpense ? '-' : '+';
-				const colorClass = isExpense ? 'text-danger' : 'text-success';
+				// Adjustment sign depends on amount
+				let sign = isExpense ? '-' : '+';
+				let colorClass = isExpense ? 'text-danger' : 'text-success';
+
+				if (t.type === 'adjustment') {
+					// Adjustment Logic Removed
+				}
+
 				const categoryName = this.getCategoryName(t.category);
 
 				const sourceName = this.t(t.source === 'bank' ? 'source_bank' : 'source_cash');
@@ -752,7 +769,18 @@ const App = {
 
 			// 1. INCOME
 			if (t.type === 'income') {
-				total[source] += amount;
+				const fundCategories = ['Saving', 'Support', 'Investment', 'Together'];
+				if (fundCategories.includes(t.category)) {
+					// Add directly to Fund Balance, NOT to Total (General)
+					if (t.category === 'Saving') saving[source] += amount;
+					else if (t.category === 'Support') support[source] += amount;
+					else if (t.category === 'Investment') investment[source] += amount;
+					else if (t.category === 'Together') together[source] += amount;
+					// Note: 'total' here represents Unallocated/General Balance
+				} else {
+					// Salary, Other -> Add to General Balance
+					total[source] += amount;
+				}
 			} else if (t.type === 'expense') {
 				// 2. EXPENSE
 				// If Fund is used, deduct from Fund Balance
@@ -795,6 +823,7 @@ const App = {
 					else if (t.category === 'Together') together[source] += amount;
 				}
 			}
+
 		});
 
 		// Calculate Totals for display (Sum of Cash + Bank)
@@ -1472,7 +1501,7 @@ const App = {
 		// 1. Update Categories
 		let categories = [];
 		if (type === 'income') {
-			categories = ['Salary', 'Other', 'Investment'];
+			categories = ['Salary', 'Saving', 'Support', 'Investment', 'Other']; // Updated Income Categories, added Saving, Support
 		} else if (type === 'allocation') {
 			categories = ['Transfer', 'Saving', 'Support', 'Investment', 'Together'];
 		} else {
@@ -1533,7 +1562,7 @@ const App = {
 				form.dataset.fundBound = 'true';
 			}
 		} else {
-			// For Income and Allocation, trigger payment method update directly
+			// For Income, Allocation, and Adjustment, trigger payment method update directly
 			this.updatePaymentMethodOptions();
 		}
 	},
@@ -1545,8 +1574,11 @@ const App = {
 
 		if (!balances || Object.keys(balances).length === 0) return;
 
-		// Keep current value if possible
-		const currentValue = fundSelect.value;
+		if (!balances || Object.keys(balances).length === 0) return;
+
+		// Use target value from dataset if available (for Edit mode), otherwise current DOM value
+		const targetValue = form.dataset.targetFund;
+		const currentValue = (targetValue !== undefined) ? targetValue : fundSelect.value;
 
 		// Map values to state keys
 		const fundMap = {
@@ -1579,12 +1611,15 @@ const App = {
 			// Show if balance exists and Total (Cash + Bank) > 0
 			// Always show 'None' if we want to allow negative general balance? 
 			// User requirement: "Use Fund option only display if total amount available."
-			const available = balanceObj ? (balanceObj.cash + balanceObj.bank) > 0 : false;
+			// EXCEPTION: For Adjustment, always show all options
+			const isAdjustment = this.elements.transactionForm.querySelector('input[name="type"]:checked').value === 'adjustment';
+			const available = isAdjustment ? true : (balanceObj ? (balanceObj.cash + balanceObj.bank) > 0 : false);
 
-			if (available) {
+			// Always show if it's the currently selected value (Preserve value on Edit)
+			if (available || opt.value === currentValue) {
 				const option = document.createElement('option');
 				option.value = opt.value;
-				option.textContent = opt.label; // + ` (${this.formatCurrency(balanceObj.cash + balanceObj.bank)})` ? No, just label.
+				option.textContent = opt.label;
 				fundSelect.appendChild(option);
 			}
 		});
@@ -1657,19 +1692,20 @@ const App = {
 
 		const balanceObj = balances[stateKey];
 
-		// Keep current source selection if possible
-		const currentSource = sourceSelect.value;
+		// Use target value from dataset if available (for Edit mode), otherwise current DOM value
+		const targetSource = form.dataset.targetSource;
+		const currentSource = (targetSource !== undefined) ? targetSource : sourceSelect.value;
 
 		sourceSelect.innerHTML = '';
 
 		if (balanceObj) {
-			if (balanceObj.cash > 0) {
+			if (balanceObj.cash > 0 || currentSource === 'cash') {
 				const optCash = document.createElement('option');
 				optCash.value = 'cash';
 				optCash.textContent = this.t('source_cash');
 				sourceSelect.appendChild(optCash);
 			}
-			if (balanceObj.bank > 0) {
+			if (balanceObj.bank > 0 || currentSource === 'bank') {
 				const optBank = document.createElement('option');
 				optBank.value = 'bank';
 				optBank.textContent = this.t('source_bank');
