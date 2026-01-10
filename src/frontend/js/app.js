@@ -132,6 +132,7 @@ const App = {
 			// Clear target datasets to prevent pollution
 			delete this.elements.transactionForm.dataset.targetFund;
 			delete this.elements.transactionForm.dataset.targetSource;
+			delete this.elements.transactionForm.dataset.targetDestCategory;
 
 			// Initialize category/destination state for default (Expense)
 			this.updateTransactionFormState();
@@ -176,6 +177,9 @@ const App = {
 			this.elements.fixedItemForm.reset();
 			this.elements.fixedItemForm.querySelector('input[name="id"]').value = '';
 			this.elements.fixedFormTitle.textContent = this.t('fixed_item_form_title');
+
+			// Clear target datasets
+			delete this.elements.fixedItemForm.dataset.targetFixedDestCategory;
 
 			// Init categories for fixed items
 			this.updateFixedItemFormState();
@@ -534,10 +538,12 @@ const App = {
 		form.description.value = transaction.description || '';
 		form.date.value = transaction.date;
 		form.source.value = transaction.source || 'cash';
-		if (transaction.type === 'allocation' && transaction.category === 'Transfer') {
-			form.destination.value = transaction.destination || 'bank';
-		}
 		form.fund.value = transaction.fund || '';
+		if (transaction.type === 'allocation') {
+			form.destination.value = transaction.destination || 'bank';
+			// form.destination_category.value = transaction.destination_category || ''; // Set by updateTransactionFormState
+			form.dataset.targetDestCategory = transaction.destination_category || '';
+		}
 
 		// Trigger state update to show/hide fields and populate options (will use dataset values)
 		this.updateTransactionFormState();
@@ -668,8 +674,9 @@ const App = {
 
 				const sourceName = this.t(t.source === 'bank' ? 'source_bank' : 'source_cash');
 				let destName = '';
-				if (t.type === 'allocation' && t.category === 'Transfer') {
-					destName = ' ➔ ' + this.t(t.destination === 'bank' ? 'source_bank' : 'source_cash');
+				if (t.type === 'allocation') {
+					const destCatName = this.getCategoryName(t.destination_category || 'Transfer');
+					destName = ' ➔ ' + destCatName + ' (' + this.t(t.destination === 'bank' ? 'source_bank' : 'source_cash') + ')';
 				}
 
 				// Fund display
@@ -678,9 +685,10 @@ const App = {
 					const fundKey = `fund_${t.fund.toLowerCase()}`;
 					const fundLabel = this.t(fundKey);
 					fundBadge = `<span class="badge badge-info" style="margin-left: 0.5rem; font-size: 0.75rem;">${fundLabel}</span>`;
-				} else if (t.type === 'allocation' && t.category === 'Transfer') {
+				} else if (t.type === 'allocation') {
 					// Badge for transfer
-					fundBadge = `<span class="badge badge-warning" style="margin-left: 0.5rem; font-size: 0.75rem;">Transfer</span>`;
+					const destCatName = this.getCategoryName(t.destination_category || 'Transfer');
+					fundBadge = `<span class="badge badge-warning" style="margin-left: 0.5rem; font-size: 0.75rem;">➔ ${destCatName}</span>`;
 				}
 
 				tr.innerHTML = `
@@ -803,24 +811,33 @@ const App = {
 					else if (t.category === 'Together') together[source] += amount;
 				}
 			} else if (t.type === 'allocation') {
-				// 3. ALLOCATION
-				// General Rule: Deduct from Source (General Balance)
-				total[source] -= amount;
-
-				if (t.category === 'Transfer') {
-					// Transfer between accounts (e.g. Cash -> Bank)
-					// Source decreased (above). Destination increases.
-					const destination = t.destination === 'bank' ? 'bank' : 'cash';
-					total[destination] += amount;
+				// 3. ALLOCATION (Transfer)
+				// Source Logic: Deduct from Source
+				// If Category is a Fund, deduct from that Fund. If "Salary" (General), deduct from General.
+				const sourceFundCat = ['Saving', 'Support', 'Investment', 'Together'];
+				if (sourceFundCat.includes(t.category)) {
+					if (t.category === 'Saving') saving[source] -= amount;
+					else if (t.category === 'Support') support[source] -= amount;
+					else if (t.category === 'Investment') investment[source] -= amount;
+					else if (t.category === 'Together') together[source] -= amount;
 				} else {
-					// Allocation to Fund
-					// Source decreased (General). Fund increases.
-					// We assume the fund grows in the same "currency type" as the source
-					// e.g. Allocate Bank -> Investment (Bank)
-					if (t.category === 'Saving') saving[source] += amount;
-					else if (t.category === 'Support') support[source] += amount;
-					else if (t.category === 'Investment') investment[source] += amount;
-					else if (t.category === 'Together') together[source] += amount;
+					// General Balance (Salary, Other, etc)
+					total[source] -= amount;
+				}
+
+				// Destination Logic: Add to Destination
+				const destSource = t.destination === 'bank' ? 'bank' : 'cash';
+				const destCat = t.destination_category;
+
+				if (destCat) {
+					if (destCat === 'Saving') saving[destSource] += amount;
+					else if (destCat === 'Support') support[destSource] += amount;
+					else if (destCat === 'Investment') investment[destSource] += amount;
+					else if (destCat === 'Together') together[destSource] += amount;
+					else {
+						// Destination is General (Salary, etc. - unlikely but possible for "Cash Out")
+						total[destSource] += amount;
+					}
 				}
 			}
 
@@ -1174,18 +1191,57 @@ const App = {
 		const useFundGroup = form.querySelector('#fixed-use-fund-group');
 		const destGroup = form.querySelector('#fixed-destination-group');
 
-		// 1. Update Categories
+
+		// UI Elements for Grid Layout
+		const gridContainer = document.getElementById('fixed-transfer-grid');
+		const sourceSection = document.getElementById('fixed-source-section');
+		const sourceTitle = document.getElementById('fixed-source-title');
+
+		// 1. Update Grid Layout and Section Styles based on Type
+		if (type === 'allocation') {
+			// Apply Grid Layout
+			gridContainer.classList.add('transfer-grid');
+			gridContainer.classList.remove('transfer-grid-default'); // Remove default block style if any
+
+			sourceSection.classList.add('source-section');
+			sourceSection.classList.remove('source-section-default');
+
+			// Show Source Title
+			sourceTitle.classList.remove('hidden');
+			sourceTitle.style.display = 'block';
+			sourceTitle.textContent = this.t('source_from_title');
+
+			// Show Destination Group
+			destGroup.classList.remove('hidden');
+
+		} else {
+			// Revert to Standard Layout
+			gridContainer.classList.remove('transfer-grid');
+			gridContainer.classList.add('transfer-grid-default');
+
+			sourceSection.classList.remove('source-section');
+			sourceSection.classList.add('source-section-default');
+
+			// Hide Source Title
+			sourceTitle.classList.add('hidden');
+			sourceTitle.style.display = 'none';
+
+			// Hide Destination Group
+			destGroup.classList.add('hidden');
+		}
+
+		// 2. Update Categories
 		categorySelect.innerHTML = '';
 		let categories = [];
 		if (type === 'income') {
-			categories = ['Salary', 'Investment', 'Other'];
+			categories = ['Salary', 'Saving', 'Support', 'Investment', 'Other'];
 		} else if (type === 'allocation') {
-			categories = ['Transfer', 'Saving', 'Support', 'Investment', 'Together'];
+			categories = ['Salary', 'Other', 'Saving', 'Support', 'Investment', 'Together'];
 		} else {
-			// Expense types
+			// Expense output
 			categories = [
 				'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health',
-				'Investment', 'Saving', 'Debt', 'Support', 'Personal', 'Together', 'Other'
+				'Debt', 'Personal', 'Other'
 			];
 		}
 
@@ -1196,7 +1252,7 @@ const App = {
 			categorySelect.appendChild(option);
 		});
 
-		// 2. Toggle "Use Fund" Visibility (Only for Expense)
+		// 3. Toggle "Use Fund" Visibility (Only for Expense)
 		if (type === 'expense') {
 			useFundGroup.classList.remove('hidden');
 		} else {
@@ -1204,21 +1260,26 @@ const App = {
 			form.fund.value = '';
 		}
 
-		// 3. Toggle Destination field visibility
-		const updateVisibility = () => {
-			if (type === 'allocation' && categorySelect.value === 'Transfer') {
-				destGroup.classList.remove('hidden');
-			} else {
-				destGroup.classList.add('hidden');
+		// 4. Populate Destination Category (Only for Allocation)
+		if (type === 'allocation') {
+			const destSelect = form.querySelector('select[name="destination_category"]');
+			// Save current if exists, or use target from dataset (Edit mode)
+			const targetDest = form.dataset.targetFixedDestCategory;
+			const currentDest = (targetDest !== undefined) ? targetDest : destSelect.value;
+
+			destSelect.innerHTML = '<option value="" disabled selected>Select Destination Category</option>';
+			const destCategories = ['Saving', 'Support', 'Investment', 'Together', 'Salary', 'Other'];
+
+			destCategories.forEach(cat => {
+				const option = document.createElement('option');
+				option.value = cat;
+				option.textContent = this.getCategoryName(cat);
+				destSelect.appendChild(option);
+			});
+			if (currentDest && destCategories.includes(currentDest)) {
+				destSelect.value = currentDest;
 			}
-		};
-
-		if (!form.dataset.catBound) {
-			categorySelect.addEventListener('change', updateVisibility);
-			form.dataset.catBound = 'true';
 		}
-
-		updateVisibility();
 
 		// 4. Update Use Fund Options (Dynamic Filtering)
 		if (type === 'expense') {
@@ -1428,8 +1489,10 @@ const App = {
 		form.description.value = item.description || '';
 		form.source.value = item.source || 'cash';
 		form.fund.value = item.fund || '';
-		if (item.type === 'allocation' && item.category === 'Transfer') {
+		if (item.type === 'allocation') {
 			form.destination.value = item.destination || 'bank';
+			// form.destination_category.value = item.destination_category || '';
+			form.dataset.targetFixedDestCategory = item.destination_category || '';
 		}
 
 		this.elements.fixedFormTitle.textContent = this.t('edit_fixed_item_title') || 'Edit Fixed Item';
@@ -1503,7 +1566,11 @@ const App = {
 		if (type === 'income') {
 			categories = ['Salary', 'Saving', 'Support', 'Investment', 'Other']; // Updated Income Categories, added Saving, Support
 		} else if (type === 'allocation') {
-			categories = ['Transfer', 'Saving', 'Support', 'Investment', 'Together'];
+			// Allocation Sources: Can come from ANY category (General or Funds)
+			categories = [
+				'Salary', 'Other', // General Sources
+				'Saving', 'Support', 'Investment', 'Together' // Fund Sources
+			];
 		} else {
 			// Expense
 			categories = [
@@ -1538,19 +1605,75 @@ const App = {
 
 		// 3. Toggle Destination field visibility
 		const updateVisibility = () => {
-			if (categorySelect.value === 'Transfer') {
+			if (type === 'allocation') {
 				destGroup.classList.remove('hidden');
+
+				// Populate Destination Category
+				const destSelect = form.querySelector('select[name="destination_category"]');
+				// Save current if exists, or use target from dataset (Edit mode)
+				const targetDest = form.dataset.targetDestCategory;
+				const currentDest = (targetDest !== undefined) ? targetDest : destSelect.value;
+
+				destSelect.innerHTML = '<option value="" disabled selected>Select Destination Category</option>';
+				const destCategories = [
+					'Saving', 'Support', 'Investment', 'Together', // Funds
+					'Salary', 'Other' // General
+				];
+
+				destCategories.forEach(cat => {
+					// Optional: specific filtering to prevent self-transfer loop?
+					// For now allow all
+					const option = document.createElement('option');
+					option.value = cat;
+					option.textContent = this.getCategoryName(cat);
+					destSelect.appendChild(option);
+				});
+
+				if (currentDest && destCategories.includes(currentDest)) {
+					destSelect.value = currentDest;
+				}
+
 			} else {
 				destGroup.classList.add('hidden');
 			}
 		};
 
 		if (!form.dataset.catBound) {
-			categorySelect.addEventListener('change', updateVisibility);
+			// categorySelect.addEventListener('change', updateVisibility); // Removed check on category
 			form.dataset.catBound = 'true';
 		}
 
 		updateVisibility(); // Initial check
+
+		// 3.1 Update Section Titles & Grid Styling for UX
+		const sourceTitle = form.querySelector('#source-title');
+		const sourceSection = form.querySelector('#source-section');
+		const transferGrid = form.querySelector('.transfer-grid');
+
+		if (sourceTitle && sourceSection && transferGrid) {
+			if (type === 'allocation') {
+				sourceTitle.style.display = 'block'; // Ensure visible for allocation
+				sourceTitle.textContent = this.t('source_from_title') || 'From (Source)';
+
+				// Apply Grid & Styling for Allocation
+				transferGrid.style.display = 'grid';
+				transferGrid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(250px, 1fr))';
+				transferGrid.style.gap = 'var(--space-md)';
+				transferGrid.style.marginTop = 'var(--space-md)';
+
+				sourceSection.classList.add('p-4', 'rounded', 'border', 'border-accent');
+				sourceSection.style.background = 'var(--bg-secondary)';
+			} else {
+				sourceTitle.style.display = 'none'; // Hide for regular transactions
+
+				// Remove Styling for regular Transacitons
+				transferGrid.style.display = 'block';
+				transferGrid.style.marginTop = '0';
+
+				sourceSection.classList.remove('p-4', 'rounded', 'border', 'border-accent');
+				sourceSection.style.background = 'transparent';
+			}
+		}
 
 		// 4. Update Use Fund Options (Dynamic Filtering)
 		// 4. Update Use Fund Options (Dynamic Filtering)
@@ -1722,67 +1845,7 @@ const App = {
 		}
 	},
 
-	calculateFixedItemBalances() {
-		const fixedItems = this.state.fixedItems || [];
 
-		// Initialize balance objects (Same structure as main balances)
-		let total = { cash: 0, bank: 0 };
-		let saving = { cash: 0, bank: 0 };
-		let support = { cash: 0, bank: 0 };
-		let investment = { cash: 0, bank: 0 };
-		let together = { cash: 0, bank: 0 };
-
-		const getSource = (source) => source === 'bank' ? 'bank' : 'cash';
-
-		fixedItems.forEach(t => {
-			const source = getSource(t.source);
-			const amount = t.amount;
-
-			// 1. INCOME
-			if (t.type === 'income') {
-				total[source] += amount;
-			} else if (t.type === 'expense') {
-				// 2. EXPENSE
-				if (t.fund) {
-					const fundSource = source;
-					if (t.fund === 'Saving') saving[fundSource] -= amount;
-					else if (t.fund === 'Support') support[fundSource] -= amount;
-					else if (t.fund === 'Investment') investment[fundSource] -= amount;
-					else if (t.fund === 'Together') together[fundSource] -= amount;
-				} else {
-					total[source] -= amount;
-
-					// Legacy Logic for Expense Categories acting as Allocation
-					if (t.category === 'Saving') saving[source] += amount;
-					else if (t.category === 'Support') support[source] += amount;
-					else if (t.category === 'Investment') investment[source] += amount;
-					else if (t.category === 'Together') together[source] += amount;
-				}
-			} else if (t.type === 'allocation') {
-				// 3. ALLOCATION
-				total[source] -= amount;
-
-				if (t.category === 'Transfer') {
-					const destination = t.destination === 'bank' ? 'bank' : 'cash';
-					total[destination] += amount;
-				} else {
-					// Allocation to Fund
-					if (t.category === 'Saving') saving[source] += amount;
-					else if (t.category === 'Support') support[source] += amount;
-					else if (t.category === 'Investment') investment[source] += amount;
-					else if (t.category === 'Together') together[source] += amount;
-				}
-			}
-		});
-
-		return {
-			total: total,
-			saving: saving,
-			support: support,
-			investment: investment,
-			together: together
-		};
-	}
 };
 
 document.addEventListener('DOMContentLoaded', () => {

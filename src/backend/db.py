@@ -70,7 +70,12 @@ def init_db():
         print("Migrating database: Adding destination column to transactions table...")
         c.execute("ALTER TABLE transactions ADD COLUMN destination TEXT DEFAULT NULL")
 
-    # Migration: Add fund column if it doesn't exist
+    # Migration: Add destination_category column to transactions if it doesn't exist
+    try:
+        c.execute('SELECT destination_category FROM transactions LIMIT 1')
+    except sqlite3.OperationalError:
+        print("Migrating database: Adding destination_category column to transactions table...")
+        c.execute("ALTER TABLE transactions ADD COLUMN destination_category TEXT DEFAULT NULL")
 
     # Migration: Add fund column if it doesn't exist
     try:
@@ -96,6 +101,8 @@ def init_db():
             category TEXT NOT NULL,
             description TEXT,
             source TEXT DEFAULT 'cash', -- 'cash' or 'bank'
+            destination TEXT DEFAULT NULL, -- 'cash' or 'bank' (for transfers)
+            destination_category TEXT DEFAULT NULL, -- 'Saving', etc.
             fund TEXT, -- 'Saving', 'Support', 'Investment', 'Together'
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
@@ -108,6 +115,20 @@ def init_db():
     except sqlite3.OperationalError:
         print("Migrating database: Adding fund column to fixed_items table...")
         c.execute("ALTER TABLE fixed_items ADD COLUMN fund TEXT DEFAULT NULL")
+
+    # Migration: Add destination column to fixed_items if it doesn't exist
+    try:
+        c.execute('SELECT destination FROM fixed_items LIMIT 1')
+    except sqlite3.OperationalError:
+        print("Migrating database: Adding destination column to fixed_items table...")
+        c.execute("ALTER TABLE fixed_items ADD COLUMN destination TEXT DEFAULT NULL")
+
+    # Migration: Add destination_category column to fixed_items if it doesn't exist
+    try:
+        c.execute('SELECT destination_category FROM fixed_items LIMIT 1')
+    except sqlite3.OperationalError:
+        print("Migrating database: Adding destination_category column to fixed_items table...")
+        c.execute("ALTER TABLE fixed_items ADD COLUMN destination_category TEXT DEFAULT NULL")
 
     # Create Settings Table
     c.execute('''

@@ -104,6 +104,7 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                      "source": row['source'],
                      "source": row['source'],
                      "destination": row['destination'] if 'destination' in row.keys() else None,
+                     "destination_category": row['destination_category'] if 'destination_category' in row.keys() else None,
                      "fund": row['fund'] if 'fund' in row.keys() else None
                  })
                  
@@ -137,6 +138,7 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                       "source": row['source'],
                       "source": row['source'],
                       "destination": row['destination'] if 'destination' in row.keys() else None,
+                      "destination_category": row['destination_category'] if 'destination_category' in row.keys() else None,
                       "fund": row['fund'] if 'fund' in row.keys() else None
                  })
              
@@ -183,6 +185,8 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                      "category": item['category'],
                      "description": item['description'],
                      "source": item['source'],
+                     "destination": item['destination'] if 'destination' in item.keys() else None,
+                     "destination_category": item['destination_category'] if 'destination_category' in item.keys() else None,
                      "fund": item['fund'] if 'fund' in item.keys() else None
                  })
              
@@ -256,14 +260,15 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             
             source = data.get('source', 'cash')
             destination = data.get('destination')
+            destination_category = data.get('destination_category')
             fund = data.get('fund')
             
             conn = get_db_connection()
             c = conn.cursor()
             c.execute('''
-                INSERT INTO transactions (user_id, amount, currency, type, category, description, source, destination, fund, date)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (user_id, amount, currency, trans_type, category, description, source, destination, fund, date))
+                INSERT INTO transactions (user_id, amount, currency, type, category, description, source, destination, destination_category, fund, date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, amount, currency, trans_type, category, description, source, destination, destination_category, fund, date))
             conn.commit()
             conn.close()
             
@@ -279,6 +284,7 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             description = data.get('description', '')
             source = data.get('source', 'cash')
             destination = data.get('destination')
+            destination_category = data.get('destination_category')
             fund = data.get('fund')
             date = data.get('date')
             currency = data.get('currency', 'VND')
@@ -287,9 +293,9 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             c = conn.cursor()
             c.execute('''
                 UPDATE transactions 
-                SET amount = ?, currency = ?, type = ?, category = ?, description = ?, source = ?, destination = ?, fund = ?, date = ?
+                SET amount = ?, currency = ?, type = ?, category = ?, description = ?, source = ?, destination = ?, destination_category = ?, fund = ?, date = ?
                 WHERE id = ?
-            ''', (amount, currency, trans_type, category, description, source, destination, fund, date, trans_id))
+            ''', (amount, currency, trans_type, category, description, source, destination, destination_category, fund, date, trans_id))
             conn.commit()
             conn.close()
             
@@ -372,14 +378,16 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             category = data.get('category')
             description = data.get('description', '')
             source = data.get('source', 'cash')
+            destination = data.get('destination')
+            destination_category = data.get('destination_category')
             fund = data.get('fund')
             
             conn = get_db_connection()
             c = conn.cursor()
             c.execute('''
-                INSERT INTO fixed_items (user_id, amount, type, category, description, source, fund)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (user_id, amount, item_type, category, description, source, fund))
+                INSERT INTO fixed_items (user_id, amount, type, category, description, source, destination, destination_category, fund)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, amount, item_type, category, description, source, destination, destination_category, fund))
             conn.commit()
             conn.close()
             
@@ -393,15 +401,17 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             category = data.get('category')
             description = data.get('description', '')
             source = data.get('source', 'cash')
+            destination = data.get('destination')
+            destination_category = data.get('destination_category')
             fund = data.get('fund')
             
             conn = get_db_connection()
             c = conn.cursor()
             c.execute('''
                 UPDATE fixed_items 
-                SET amount = ?, type = ?, category = ?, description = ?, source = ?, fund = ?
+                SET amount = ?, type = ?, category = ?, description = ?, source = ?, destination = ?, destination_category = ?, fund = ?
                 WHERE id = ?
-            ''', (amount, item_type, category, description, source, fund, item_id))
+            ''', (amount, item_type, category, description, source, destination, destination_category, fund, item_id))
             conn.commit()
             conn.close()
             
@@ -446,10 +456,13 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             count = 0
             for item in items:
                 c.execute('''
-                    INSERT INTO transactions (user_id, amount, type, category, description, source, fund, date)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO transactions (user_id, amount, type, category, description, source, destination, destination_category, fund, date)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (user_id, item['amount'], item['type'], item['category'], 
-                      item['description'], item['source'], item['fund'] if 'fund' in item.keys() else None, target_date))
+                      item['description'], item['source'], 
+                      item['destination'] if 'destination' in item.keys() else None,
+                      item['destination_category'] if 'destination_category' in item.keys() else None,
+                      item['fund'] if 'fund' in item.keys() else None, target_date))
                 count += 1
                 
             conn.commit()

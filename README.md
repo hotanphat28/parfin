@@ -9,9 +9,10 @@ ParFin is a finance management web application designed for couples. It helps tr
 
 - **Couple-Centric Design**: Tailored for managing shared finances.
 - **Multi-lingual Support**: Supports **English** (default) and **Vietnamese**, switchable via the UI.
-- **Fixed Items Management**: Manage recurring monthly items (e.g., Salary, Rent) and auto-generate transactions.
+- **Fixed Items Management**: Manage recurring monthly items (e.g., Salary, Rent) and auto-generate transactions for Expenses, Incomes, and **Allocations**.
 - **Fund Allocation**: Organize finances into specific funds (Serving, Support, Investment, Together Budget).
-- **Flexible Transactions**: Support for Expenses, Incomes, and **Allocations (Transfers)** between accounts.
+- **Flexible Transactions**: Support for Expenses, Incomes, and **Allocations (Transfers)**.
+- **Smart Form Layouts**: Dynamic UI that adapts to the transaction type (e.g., side-by-side "From/To" layout for transfers).
 - **Exchange Rate Management**: Set custom exchange rates (USD/VND) for accurate currency conversion.
 - **Visual Analytics**: Interactive bar charts (via Chart.js) to visualize spending by category and payment method.
 - **Responsive UI**: Includes a **Collapsible Sidebar** for better space management on smaller screens.
@@ -84,7 +85,9 @@ parfin/
 
 1.  **Login**: Use the default admin credentials (if initialized) or credentials provided by your administrator.
 2.  **Dashboard**: View your recent transactions, allocation charts, and financial overview.
-3.  **Add Transaction**: Use the interface to log new expenses, incomes, or allocations.
+3.  **Add Transaction**: 
+    - **Expense/Income**: Log standard transactions.
+    - **Allocation**: Transfer funds between accounts (Source -> Destination) with a clear side-by-side UI.
 4.  **Fixed Items**: Define recurring monthly items (like Rent or Salary) and easily generate them for the current month.
 5.  **Settings**: Navigate to Settings to switch language, theme, or update the **Exchange Rate**.
 

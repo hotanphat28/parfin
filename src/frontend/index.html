@@ -326,26 +326,7 @@
                         <input type="date" name="date" class="input-field" required>
                     </div>
 
-                    <!-- 3. Category -->
-                    <div class="input-group">
-                        <label class="input-label" data-i18n="category_label">Category</label>
-                        <select name="category" class="input-field" required>
-                            <option value="Food" data-i18n="category_food">Food & Dining</option>
-                            <option value="Transport" data-i18n="category_transport">Transportation</option>
-                            <option value="Shopping" data-i18n="category_shopping">Shopping</option>
-                            <option value="Bills" data-i18n="category_bills">Bills & Utilities</option>
-                            <option value="Entertainment" data-i18n="category_entertainment">Entertainment</option>
-                            <option value="Health" data-i18n="category_health">Health & Fitness</option>
-                            <option value="Salary" data-i18n="category_salary">Salary</option>
-                            <option value="Investment" data-i18n="category_investment">Investment</option>
-                            <option value="Saving" data-i18n="category_saving">Saving</option>
-                            <option value="Debt" data-i18n="category_debt">Debt</option>
-                            <option value="Support" data-i18n="category_support">Support</option>
-                            <option value="Personal" data-i18n="category_personal">Personal Budget</option>
-                            <option value="Together" data-i18n="category_together">Together Budget</option>
-                            <option value="Other" data-i18n="category_other">Other</option>
-                        </select>
-                    </div>
+
 
                     <!-- 4. Description -->
                     <div class="input-group">
@@ -361,34 +342,69 @@
                         <input type="number" name="amount" class="input-field" required min="0" step="0.01">
                     </div>
 
-                    <!-- 6. Use Fund -->
-                    <div class="input-group" id="use-fund-group">
-                        <label class="input-label" data-i18n="fund_label">Use Fund</label>
-                        <select name="fund" class="input-field">
-                            <option value="" data-i18n="fund_none">None</option>
-                            <option value="Saving" data-i18n="fund_saving">Saving</option>
-                            <option value="Support" data-i18n="fund_support">Support</option>
-                            <option value="Investment" data-i18n="fund_investment">Investment</option>
-                            <option value="Together" data-i18n="fund_together">Together Budget</option>
-                        </select>
-                    </div>
+                    <!-- Transfer Grid Container -->
+                    <div class="transfer-grid">
 
-                    <!-- 7. Payment Method (Source) -->
-                    <div class="input-group">
-                        <label class="input-label" data-i18n="source_label">Payment method</label>
-                        <select name="source" class="input-field" required>
-                            <option value="cash" data-i18n="source_cash">Cash</option>
-                            <option value="bank" data-i18n="source_bank">Bank Account</option>
-                        </select>
-                    </div>
+                        <!-- Source Section -->
+                        <div id="source-section">
+                            <h3 class="text-sm font-bold mb-2 text-secondary" id="source-title"
+                                data-i18n="source_title">Details</h3>
 
-                    <!-- 8. Destination (For Transfers) -->
-                    <div class="input-group hidden" id="destination-group">
-                        <label class="input-label" data-i18n="destination_label">To (Destination)</label>
-                        <select name="destination" class="input-field">
-                            <option value="cash" data-i18n="source_cash">Cash</option>
-                            <option value="bank" data-i18n="source_bank">Bank Account</option>
-                        </select>
+                            <!-- Category -->
+                            <div class="input-group">
+                                <label class="input-label" id="category-label"
+                                    data-i18n="category_label">Category</label>
+                                <select name="category" class="input-field" required>
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+
+                            <!-- Use Fund (Expense Only) -->
+                            <div class="input-group" id="use-fund-group">
+                                <label class="input-label" data-i18n="fund_label">Use Fund</label>
+                                <select name="fund" class="input-field">
+                                    <option value="" data-i18n="fund_none">None</option>
+                                    <option value="Saving" data-i18n="fund_saving">Saving</option>
+                                    <option value="Support" data-i18n="fund_support">Support</option>
+                                    <option value="Investment" data-i18n="fund_investment">Investment</option>
+                                    <option value="Together" data-i18n="fund_together">Together Budget</option>
+                                </select>
+                            </div>
+
+                            <!-- Payment Method (Source) -->
+                            <div class="input-group">
+                                <label class="input-label" data-i18n="source_label">Payment method</label>
+                                <select name="source" class="input-field" required>
+                                    <option value="cash" data-i18n="source_cash">Cash</option>
+                                    <option value="bank" data-i18n="source_bank">Bank Account</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Destination Section (Allocations Only) -->
+                        <div id="destination-group" class="hidden p-4 rounded border border-accent"
+                            style="background: var(--bg-secondary);">
+                            <h3 class="text-sm font-bold mb-2 text-secondary" data-i18n="destination_label">To
+                                (Destination)</h3>
+
+                            <!-- Dest Category -->
+                            <div class="input-group">
+                                <label class="input-label" data-i18n="category_label">Category</label>
+                                <select name="destination_category" class="input-field">
+                                    <option value="" disabled selected>Select Destination Category</option>
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+
+                            <!-- Dest Payment Method -->
+                            <div class="input-group">
+                                <label class="input-label" data-i18n="source_label">Payment method</label>
+                                <select name="destination" class="input-field">
+                                    <option value="cash" data-i18n="source_cash">Cash</option>
+                                    <option value="bank" data-i18n="source_bank">Bank Account</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="flex gap-md" style="margin-top: var(--space-lg)">
@@ -521,13 +537,6 @@
                     </div>
 
                     <div class="input-group">
-                        <label class="input-label" data-i18n="category_label">Category</label>
-                        <select name="category" class="input-field" required id="fixed-category-select">
-                            <!-- Categories will be dynamic based on type -->
-                        </select>
-                    </div>
-
-                    <div class="input-group">
                         <label class="input-label" data-i18n="desc_label">Description</label>
                         <input type="text" name="description" class="input-field"
                             placeholder="Description (e.g., Monthly Rent)">
@@ -538,34 +547,67 @@
                         <input type="number" name="amount" class="input-field" required min="0" step="0.01">
                     </div>
 
-                    <!-- Use Fund -->
-                    <div class="input-group" id="fixed-use-fund-group">
-                        <label class="input-label" data-i18n="fund_label">Use Fund</label>
-                        <select name="fund" class="input-field">
-                            <option value="" data-i18n="fund_none">None</option>
-                            <option value="Saving" data-i18n="fund_saving">Saving</option>
-                            <option value="Support" data-i18n="fund_support">Support</option>
-                            <option value="Investment" data-i18n="fund_investment">Investment</option>
-                            <option value="Together" data-i18n="fund_together">Together Budget</option>
-                        </select>
-                    </div>
+                    <!-- NEW LAYOUT: Group Source and Destination side-by-side for Allocation -->
+                    <!-- This container will become a grid when type=allocation -->
+                    <div id="fixed-transfer-grid" class="transfer-grid-default">
 
-                    <!-- Payment Method -->
-                    <div class="input-group">
-                        <label class="input-label" data-i18n="source_label">Payment method</label>
-                        <select name="source" class="input-field" required>
-                            <option value="cash" data-i18n="source_cash">Cash</option>
-                            <option value="bank" data-i18n="source_bank">Bank Account</option>
-                        </select>
-                    </div>
+                        <!-- LEFT SIDE: Source Details -->
+                        <div id="fixed-source-section" class="source-section-default">
+                            <h3 id="fixed-source-title" class="text-md font-medium text-secondary mb-2 hidden"
+                                data-i18n="source_details_title">Details (Source)</h3>
 
-                    <!-- Destination (For Allocations) -->
-                    <div class="input-group hidden" id="fixed-destination-group">
-                        <label class="input-label" data-i18n="destination_label">To (Destination)</label>
-                        <select name="destination" class="input-field">
-                            <option value="cash" data-i18n="source_cash">Cash</option>
-                            <option value="bank" data-i18n="source_bank">Bank Account</option>
-                        </select>
+
+                            <div class="input-group">
+                                <label class="input-label" data-i18n="category_label">Category</label>
+                                <select name="category" class="input-field" required id="fixed-category-select">
+                                    <!-- Categories will be dynamic based on type -->
+                                </select>
+                            </div>
+
+                            <!-- Use Fund -->
+                            <div class="input-group" id="fixed-use-fund-group">
+                                <label class="input-label" data-i18n="fund_label">Use Fund</label>
+                                <select name="fund" class="input-field">
+                                    <option value="" data-i18n="fund_none">None</option>
+                                    <option value="Saving" data-i18n="fund_saving">Saving</option>
+                                    <option value="Support" data-i18n="fund_support">Support</option>
+                                    <option value="Investment" data-i18n="fund_investment">Investment</option>
+                                    <option value="Together" data-i18n="fund_together">Together Budget</option>
+                                </select>
+                            </div>
+
+                            <!-- Payment Method -->
+                            <div class="input-group">
+                                <label class="input-label" data-i18n="source_label">Payment method</label>
+                                <select name="source" class="input-field" required>
+                                    <option value="cash" data-i18n="source_cash">Cash</option>
+                                    <option value="bank" data-i18n="source_bank">Bank Account</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT SIDE: Destination Details (Allocation Only) -->
+                        <div class="destination-group hidden" id="fixed-destination-group">
+                            <h3 class="text-md font-medium text-secondary mb-2" data-i18n="destination_details_title">To
+                                (Destination)</h3>
+
+                            <div class="input-group">
+                                <label class="input-label" data-i18n="category_label">Category</label>
+                                <select name="destination_category" class="input-field"
+                                    style="margin-bottom: var(--space-md)">
+                                    <option value="" disabled selected>Select Destination Category</option>
+                                    <!-- Will be populated by JS -->
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <label class="input-label" data-i18n="source_label">Payment method</label>
+                                <select name="destination" class="input-field">
+                                    <option value="cash" data-i18n="source_cash">Cash</option>
+                                    <option value="bank" data-i18n="source_bank">Bank Account</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="flex gap-md" style="margin-top: var(--space-lg)">
