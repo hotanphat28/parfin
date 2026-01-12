@@ -6,6 +6,7 @@ const App = {
 	state: {
 		currentUser: null,
 		transactions: [],
+		investments: [], // Investment transactions
 		filterParams: { type: 'month', month: new Date().toISOString().slice(0, 7) }, // YYYY-MM
 		theme: localStorage.getItem('parfin_theme') || 'system',
 		currentLanguage: localStorage.getItem('parfin_language') || 'en',
@@ -88,7 +89,16 @@ const App = {
 		updateRateBtn: document.getElementById('update-rate-btn'),
 		// Chart Elements
 		chartContainer: document.getElementById('chart-container'),
-		toggleChartBtn: document.getElementById('toggle-chart-btn')
+		toggleChartBtn: document.getElementById('toggle-chart-btn'),
+		// Investment Elements
+		investmentModal: document.getElementById('investment-modal'),
+		investmentForm: document.getElementById('investment-form'),
+		investmentHistoryBody: document.getElementById('inv-history-body'),
+		holdingsBody: document.getElementById('holdings-list-body'),
+		invTotalInvested: document.getElementById('inv-total-invested'),
+		invCurrentValue: document.getElementById('inv-current-value'),
+		invTotalPL: document.getElementById('inv-total-pl'),
+		invAvailableCash: document.getElementById('inv-available-cash')
 	},
 
 	init() {
@@ -205,6 +215,11 @@ const App = {
 			});
 		});
 
+		// Investment Form Submit
+		if (this.elements.investmentForm) {
+			this.elements.investmentForm.addEventListener('submit', (e) => this.handleInvestmentSubmit(e));
+		}
+
 		// Filter Events
 		this.elements.filterType.addEventListener('change', (e) => {
 			const type = e.target.value;
@@ -284,6 +299,235 @@ const App = {
 			});
 		});
 	},
+
+	// --- Investment Logic ---
+	openInvestmentModal(type) {
+		const modal = this.elements.investmentModal;
+		const form = this.elements.investmentForm;
+		const title = document.getElementById('inv-modal-title');
+
+		form.reset();
+		form.querySelector('input[name="date"]').valueAsDate = new Date();
+		document.getElementById('inv-type').value = type;
+
+		// Dynamic UI based on type
+		const qtyGroup = document.getElementById('inv-qty-group');
+		const priceGroup = document.getElementById('inv-price-group');
+		const taxGroup = document.getElementById('inv-tax-group');
+
+		// Show all defaults
+		qtyGroup.classList.remove('hidden');
+		priceGroup.classList.remove('hidden');
+		taxGroup.classList.add('hidden');
+
+		if (type === 'buy') {
+			title.textContent = 'Buy Stock';
+		} else if (type === 'sell') {
+			title.textContent = 'Sell Stock';
+			taxGroup.classList.remove('hidden');
+		} else if (type === 'dividend') {
+			title.textContent = 'Record Dividend';
+			qtyGroup.classList.add('hidden'); // Usually just total amount for dividend, or per share? 
+			// Let's keep it simple: Record TOTAL dividend amount. 
+			// But user might want per share. 
+			// For now, let's treat "Price" as "Total Amount" for Dividend if Qty is 0?
+			// Or keep Qty and Price and calc total.
+			title.textContent = 'Record Dividend (Total Amount in Price)';
+			// Simplify for user: Quantity = 1, Price = Total Dividend Amount
+			qtyGroup.classList.add('hidden');
+			form.querySelector('input[name="quantity"]').value = 1;
+			document.querySelector('#inv-price-group label').textContent = 'Total Dividend Amount';
+			taxGroup.classList.remove('hidden');
+		}
+
+		if (type !== 'dividend') {
+			document.querySelector('#inv-price-group label').textContent = 'Price per Share';
+		}
+
+		modal.classList.remove('hidden');
+	},
+
+	async fetchInvestments() {
+		try {
+			const response = await fetch('/api/investments');
+			if (response.ok) {
+				this.state.investments = await response.json();
+				this.renderInvestments();
+				this.updateStats(); // Re-calc available cash
+			}
+		} catch (err) {
+			console.error('Failed to fetch investments', err);
+		}
+	},
+
+	async handleInvestmentSubmit(e) {
+		e.preventDefault();
+		const formData = new FormData(e.target);
+		const data = Object.fromEntries(formData.entries());
+		data.user_id = 1;
+
+		// Validation logic could go here
+
+		try {
+			const response = await fetch('/api/investments/create', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(data)
+			});
+
+			if (response.ok) {
+				this.elements.investmentModal.classList.add('hidden');
+				this.fetchInvestments();
+				this.showToast('Investment transaction saved', 'success');
+			} else {
+				this.showToast('Error saving transaction', 'error');
+			}
+		} catch (err) {
+			this.showToast('Connection error', 'error');
+		}
+	},
+
+	renderInvestments() {
+		const historyBody = this.elements.investmentHistoryBody;
+		const holdingsBody = this.elements.holdingsBody;
+		if (!historyBody || !holdingsBody) return;
+
+		historyBody.innerHTML = '';
+		holdingsBody.innerHTML = '';
+
+		const investments = this.state.investments;
+
+		if (investments.length === 0) {
+			historyBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">No transactions</td></tr>`;
+			holdingsBody.innerHTML = `<tr><td colspan="6" class="text-center p-4">No holdings</td></tr>`;
+			return;
+		}
+
+		// 1. History
+		investments.forEach(t => {
+			const tr = document.createElement('tr');
+			tr.className = 'border-b text-sm';
+
+			let colorClass = t.type === 'buy' ? 'text-danger' : 'text-success';
+			let sign = t.type === 'buy' ? '-' : '+';
+			// Total Value of transaction
+			let total = (t.quantity * t.price);
+			if (t.type === 'buy') total += t.fee;
+			if (t.type === 'sell') total -= (t.fee + t.tax);
+			if (t.type === 'dividend') total = (t.price * t.quantity) - t.tax; // price here is total amount if qty 1
+
+			tr.innerHTML = `
+                <td class="p-4">${t.date}</td>
+                <td class="p-4 font-bold">${t.symbol}</td>
+                <td class="p-4"><span class="badge badge-${t.type === 'buy' ? 'info' : (t.type === 'dividend' ? 'success' : 'warning')}">${t.type.toUpperCase()}</span></td>
+                <td class="p-4 text-right">${t.quantity}</td>
+                <td class="p-4 text-right">${this.formatCurrency(t.price)}</td>
+                <td class="p-4 text-right font-bold ${colorClass}">${sign} ${this.formatCurrency(total)}</td>
+                <td class="p-4 text-right">
+                    <button class="btn-icon delete-btn" onclick="App.deleteInvestment(${t.id})">🗑️</button>
+                </td>
+            `;
+			historyBody.appendChild(tr);
+		});
+
+		// 2. Holdings Calculation
+		const holdings = {};
+		investments.forEach(t => {
+			if (!holdings[t.symbol]) {
+				holdings[t.symbol] = { qty: 0, cost: 0, div: 0 };
+			}
+
+			if (t.type === 'buy') {
+				holdings[t.symbol].qty += t.quantity;
+				holdings[t.symbol].cost += (t.quantity * t.price) + t.fee;
+			} else if (t.type === 'sell') {
+				holdings[t.symbol].qty -= t.quantity;
+				// Cost basis reduction (FIFO/Avg) - Simplified Avg for now
+				// We don't reduce total cost here for P/L calc in a simple way,
+				// But typically: Realized P/L is separate.
+				// For "Portfolio Holdings", we just show current Qty.
+				// Avg Price is tricky without proper accounting.
+				// Simple avg price = Total Cost / Total Bought (Adjusted?)
+				// Let's just track Net Cost remaining?
+				// Proper: Avg Cost = (Previous Total Cost + New Cost) / Total Qty
+				// Sell reduces Total Cost by Avg Cost * Sell Qty
+			}
+		});
+
+		// Re-calc Avg Cost properly
+		const portfolio = {};
+		// Process chronologically for accurate Avg Cost
+		const sortedInv = [...investments].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+		sortedInv.forEach(t => {
+			if (!portfolio[t.symbol]) portfolio[t.symbol] = { qty: 0, totalCost: 0 };
+
+			if (t.type === 'buy') {
+				portfolio[t.symbol].totalCost += (t.quantity * t.price) + t.fee;
+				portfolio[t.symbol].qty += t.quantity;
+			} else if (t.type === 'sell') {
+				if (portfolio[t.symbol].qty > 0) {
+					const avgCost = portfolio[t.symbol].totalCost / portfolio[t.symbol].qty;
+					portfolio[t.symbol].totalCost -= (avgCost * t.quantity);
+					portfolio[t.symbol].qty -= t.quantity;
+				}
+			}
+		});
+
+		// Render Holdings
+		let totalInvested = 0;
+		let hasHoldings = false;
+
+		for (const [symbol, data] of Object.entries(portfolio)) {
+			if (data.qty > 0.0001) { // Ignore near zero float errors
+				hasHoldings = true;
+				const avgPrice = data.totalCost / data.qty;
+				const mktPrice = avgPrice; // Mock: Current Price = Avg Price (0% P/L) for now since we don't have live data
+				const totalValue = data.qty * mktPrice;
+
+				totalInvested += data.totalCost;
+
+				const tr = document.createElement('tr');
+				tr.className = 'border-b text-sm';
+				tr.innerHTML = `
+                    <td class="p-4 font-bold">${symbol}</td>
+                    <td class="p-4 text-right">${data.qty.toFixed(2)}</td>
+                    <td class="p-4 text-right">${this.formatCurrency(avgPrice)}</td>
+                     <td class="p-4 text-right">${this.formatCurrency(mktPrice)}</td>
+                      <td class="p-4 text-right">${this.formatCurrency(totalValue)}</td>
+                       <td class="p-4 text-right">0.00%</td>
+                `;
+				holdingsBody.appendChild(tr);
+			}
+		}
+
+		if (!hasHoldings) {
+			holdingsBody.innerHTML = `<tr><td colspan="6" class="text-center p-4">No active holdings</td></tr>`;
+		}
+
+		// Update Summary Cards
+		if (this.elements.invTotalInvested) {
+			this.elements.invTotalInvested.textContent = this.formatCurrency(totalInvested);
+			this.elements.invCurrentValue.textContent = this.formatCurrency(totalInvested); // Mock equal
+		}
+	},
+
+	async deleteInvestment(id) {
+		if (!confirm('Delete this investment transaction?')) return;
+		try {
+			const response = await fetch('/api/investments/delete', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ id })
+			});
+
+			if (response.ok) {
+				this.fetchInvestments();
+				this.showToast('Deleted', 'success');
+			}
+		} catch (e) { console.error(e); }
+	},
+
 
 	t(key) {
 		const lang = this.state.currentLanguage;
@@ -380,6 +624,7 @@ const App = {
 		if (this.elements.sidebarUserName) this.elements.sidebarUserName.textContent = username;
 
 		this.fetchTransactions();
+		this.fetchInvestments(); // Fetch investments on load
 	},
 
 	initSidebar() {
@@ -441,6 +686,9 @@ const App = {
 			console.error('Failed to fetch transactions', err);
 		}
 	},
+	// ... (rest of old code - updateStats etc)
+
+
 
 	async handleTransactionSubmit(e) {
 		e.preventDefault();
@@ -821,27 +1069,70 @@ const App = {
 					else if (t.category === 'Investment') investment[source] -= amount;
 					else if (t.category === 'Together') together[source] -= amount;
 				} else {
-					// General Balance (Salary, Other, etc)
+					// General Balance (Salary,
+					// 4. ALLOCATION (Incoming)
 					total[source] -= amount;
 				}
 
-				// Destination Logic: Add to Destination
-				const destSource = t.destination === 'bank' ? 'bank' : 'cash';
-				const destCat = t.destination_category;
+				// Destination Logic
+				// If destination category is a Fund, add to Fund Balance
+				if (t.destination_category) {
+					// We need to know if the destination payment method is cash or bank
+					// For allocations, the destination method is stored in t.destination
+					const destSource = getSource(t.destination);
 
-				if (destCat) {
-					if (destCat === 'Saving') saving[destSource] += amount;
-					else if (destCat === 'Support') support[destSource] += amount;
-					else if (destCat === 'Investment') investment[destSource] += amount;
-					else if (destCat === 'Together') together[destSource] += amount;
-					else {
-						// Destination is General (Salary, etc. - unlikely but possible for "Cash Out")
-						total[destSource] += amount;
-					}
+					if (t.destination_category === 'Saving') saving[destSource] += amount;
+					else if (t.destination_category === 'Support') support[destSource] += amount;
+					else if (t.destination_category === 'Investment') investment[destSource] += amount;
+					else if (t.destination_category === 'Together') together[destSource] += amount;
+					// If destination is not a specialized fund, it might just be a transfer to another account (handled by source deduction below, but here we add to general if it was just a transfer?
+					// Wait, if it's "Transfer" type, usually it means moving money.
+					// If destination is NONE of the special funds, we assume it goes back to General Balance (e.g. withdrawing from fund?)
+					// For now, let's assume Allocation IS for Funds.
 				}
 			}
 
 		});
+
+		// --- INVESTMENT LEDGER INTEGRATION ---
+		// Adjust Investment Fund Balance based on Stock Trading Activity
+		// Buy = Spend Cash (Decrease Investment Balance)
+		// Sell = Receive Cash (Increase Investment Balance)
+		// Dividend = Receive Cash (Increase Investment Balance)
+		// Note: We assume all trading happens via "Bank" for simplicity, or we can track it.
+		// For now, let's assume it impacts the investment 'Bank' balance mostly?
+		// Or we should split based on how we implemented the form? We didn't add Source to Investment Form.
+		// Let's assume it comes from "Investment Bank" by default? Or "Investment Cash"?
+		// Stocks are usually bought via Bank.
+
+		const invActivity = { cash: 0, bank: 0 };
+		if (this.state.investments) {
+			this.state.investments.forEach(inv => {
+				// Determine trading impact
+				let impact = 0;
+				// Cost for Buy
+				if (inv.type === 'buy') {
+					impact = -1 * ((inv.quantity * inv.price) + inv.fee);
+				}
+				// Proceeds for Sell
+				else if (inv.type === 'sell') {
+					impact = (inv.quantity * inv.price) - inv.fee - inv.tax;
+				}
+				// Proceeds for Dividend
+				else if (inv.type === 'dividend') {
+					// if quantity 1, price is total.
+					impact = (inv.quantity * inv.price) - inv.tax;
+				}
+
+				// Assume Bank for now
+				invActivity.bank += impact;
+			});
+		}
+
+		// Apply Investment Activity to Balance
+		investment.bank += invActivity.bank;
+		investment.cash += invActivity.cash;
+
 
 		// Calculate Totals for display (Sum of Cash + Bank)
 		const totalBalanceVal = total.cash + total.bank;
@@ -855,7 +1146,7 @@ const App = {
 		// Update DOM
 		// Note: The values are ALREADY in the target currency, so we pass targetCurrency as the 'from' currency
 		// to prevent double conversion in formatCurrency
-		this.elements.totalBalance.textContent = this.formatCurrency(totalBalanceVal, targetCurrency);
+		this.elements.totalBalance.textContent = this.formatCurrency(total.cash + total.bank + saving.cash + saving.bank + support.cash + support.bank + investment.cash + investment.bank + together.cash + together.bank);
 		this.elements.balanceCash.textContent = this.formatCurrency(total.cash, targetCurrency);
 		this.elements.balanceBank.textContent = this.formatCurrency(total.bank, targetCurrency);
 
@@ -863,24 +1154,29 @@ const App = {
 		this.elements.monthlyExpense.textContent = this.formatCurrency(monthlyExpense, targetCurrency);
 
 		if (this.elements.totalSaving) {
-			this.elements.totalSaving.textContent = this.formatCurrency(totalSavingVal, targetCurrency);
-			this.elements.savingCash.textContent = this.formatCurrency(saving.cash, targetCurrency);
-			this.elements.savingBank.textContent = this.formatCurrency(saving.bank, targetCurrency);
+			this.elements.totalSaving.textContent = this.formatCurrency(saving.cash + saving.bank);
+			if (this.elements.savingCash) this.elements.savingCash.textContent = this.formatCurrency(saving.cash);
+			if (this.elements.savingBank) this.elements.savingBank.textContent = this.formatCurrency(saving.bank);
 		}
 		if (this.elements.totalSupport) {
-			this.elements.totalSupport.textContent = this.formatCurrency(totalSupportVal, targetCurrency);
-			this.elements.supportCash.textContent = this.formatCurrency(support.cash, targetCurrency);
-			this.elements.supportBank.textContent = this.formatCurrency(support.bank, targetCurrency);
+			this.elements.totalSupport.textContent = this.formatCurrency(support.cash + support.bank);
+			if (this.elements.supportCash) this.elements.supportCash.textContent = this.formatCurrency(support.cash);
+			if (this.elements.supportBank) this.elements.supportBank.textContent = this.formatCurrency(support.bank);
 		}
 		if (this.elements.totalInvestment) {
-			this.elements.totalInvestment.textContent = this.formatCurrency(totalInvestmentVal, targetCurrency);
-			this.elements.investmentCash.textContent = this.formatCurrency(investment.cash, targetCurrency);
-			this.elements.investmentBank.textContent = this.formatCurrency(investment.bank, targetCurrency);
+			this.elements.totalInvestment.textContent = this.formatCurrency(investment.cash + investment.bank);
+			if (this.elements.investmentCash) this.elements.investmentCash.textContent = this.formatCurrency(investment.cash);
+			if (this.elements.investmentBank) this.elements.investmentBank.textContent = this.formatCurrency(investment.bank);
+
+			// Also update the "Available Cash" in Investment View
+			if (this.elements.invAvailableCash) {
+				this.elements.invAvailableCash.textContent = this.formatCurrency(investment.cash + investment.bank);
+			}
 		}
 		if (this.elements.totalTogether) {
-			this.elements.totalTogether.textContent = this.formatCurrency(totalTogetherVal, targetCurrency);
-			this.elements.togetherCash.textContent = this.formatCurrency(together.cash, targetCurrency);
-			this.elements.togetherBank.textContent = this.formatCurrency(together.bank, targetCurrency);
+			this.elements.totalTogether.textContent = this.formatCurrency(together.cash + together.bank);
+			if (this.elements.togetherCash) this.elements.togetherCash.textContent = this.formatCurrency(together.cash);
+			if (this.elements.togetherBank) this.elements.togetherBank.textContent = this.formatCurrency(together.bank);
 		}
 
 		// Store balances in state for form logic

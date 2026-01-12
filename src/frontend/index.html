@@ -257,8 +257,133 @@
                             <p class="text-secondary" data-i18n="coming_soon">Coming soon...</p>
                         </div>
                         <div id="view-investment" class="view-section hidden">
-                            <h2 class="text-xl mb-4" data-i18n="nav_investment">Investment</h2>
-                            <p class="text-secondary" data-i18n="coming_soon">Coming soon...</p>
+                             <!-- Investment Overview -->
+                            <div class="dashboard-overview" style="margin-bottom: var(--space-md)">
+                                <div class="stats-hero">
+                                     <div class="card stat-card hero-card">
+                                        <p class="text-secondary text-sm">Total Invested</p>
+                                        <h2 class="text-xxl text-info" id="inv-total-invested">0 ₫</h2>
+                                    </div>
+                                    <div class="card stat-card hero-card">
+                                        <p class="text-secondary text-sm">Current Market Value</p>
+                                        <h2 class="text-xxl text-primary" id="inv-current-value">0 ₫</h2>
+                                        <div class="text-xs text-secondary mt-sm">
+                                            Profit/Loss: <span id="inv-total-pl">0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="stats-secondary">
+                                    <div class="card stat-card">
+                                        <p class="text-secondary text-sm">Available Cash</p>
+                                        <h2 class="text-xl text-success" id="inv-available-cash">0 ₫</h2>
+                                        <div class="text-xs text-secondary mt-sm">
+                                            (In Investment Fund)
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="card flex gap-md" style="margin-bottom: var(--space-md)">
+                                <button class="btn btn-success" onclick="App.openInvestmentModal('buy')">Buy Stock</button>
+                                <button class="btn btn-danger" onclick="App.openInvestmentModal('sell')">Sell Stock</button>
+                                <button class="btn btn-primary" onclick="App.openInvestmentModal('dividend')">Record Dividend</button>
+                            </div>
+
+                            <!-- Portfolio Holdings -->
+                            <div class="card" style="margin-bottom: var(--space-md)">
+                                <h3 class="text-lg mb-4">Portfolio Holdings</h3>
+                                <div class="transaction-list-container">
+                                    <table class="w-full text-left border-collapse" id="holdings-table">
+                                        <thead>
+                                            <tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
+                                                <th class="p-4 font-medium">Symbol</th>
+                                                <th class="p-4 font-medium text-right">Quantity</th>
+                                                <th class="p-4 font-medium text-right">Avg Price</th>
+                                                <th class="p-4 font-medium text-right">Mkt Price</th>
+                                                 <th class="p-4 font-medium text-right">Total Value</th>
+                                                <th class="p-4 font-medium text-right">P/L %</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="holdings-list-body">
+                                            <tr><td colspan="6" class="text-center p-4">No holdings</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Investment History -->
+                            <div class="card">
+                                <h3 class="text-lg mb-4">Transaction History</h3>
+                                <div class="transaction-list-container">
+                                    <table class="w-full text-left border-collapse" id="inv-history-table">
+                                        <thead>
+                                            <tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
+                                                <th class="p-4 font-medium">Date</th>
+                                                <th class="p-4 font-medium">Symbol</th>
+                                                <th class="p-4 font-medium">Activity</th>
+                                                <th class="p-4 font-medium text-right">Qty</th>
+                                                <th class="p-4 font-medium text-right">Price</th>
+                                                <th class="p-4 font-medium text-right">Total</th>
+                                                <th class="p-4 font-medium text-right">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="inv-history-body">
+                                            <tr><td colspan="7" class="text-center p-4">No transactions</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                         <!-- Money Modal (Investment) -->
+                        <div id="investment-modal" class="modal-overlay hidden">
+                            <div class="modal-content card">
+                                <h2 class="text-xl mb-4" id="inv-modal-title">Buy Stock</h2>
+                                <form id="investment-form">
+                                    <input type="hidden" name="type" id="inv-type">
+                                    
+                                    <div class="input-group">
+                                        <label class="input-label">Date</label>
+                                        <input type="date" name="date" class="input-field" required>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label class="input-label">Symbol</label>
+                                        <input type="text" name="symbol" class="input-field" placeholder="e.g. VNM, FPT" required style="text-transform: uppercase">
+                                    </div>
+
+                                     <div class="input-group" id="inv-qty-group">
+                                        <label class="input-label">Quantity</label>
+                                        <input type="number" name="quantity" class="input-field" step="0.01">
+                                    </div>
+
+                                     <div class="input-group" id="inv-price-group">
+                                        <label class="input-label">Price per Share</label>
+                                        <input type="number" name="price" class="input-field" step="0.01">
+                                    </div>
+
+                                     <div class="input-group">
+                                        <label class="input-label">Fee</label>
+                                        <input type="number" name="fee" class="input-field" step="0.01" value="0">
+                                    </div>
+
+                                     <div class="input-group hidden" id="inv-tax-group">
+                                        <label class="input-label">Tax (TNCN)</label>
+                                        <input type="number" name="tax" class="input-field" step="0.01" value="0">
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label class="input-label">Notes</label>
+                                        <input type="text" name="notes" class="input-field">
+                                    </div>
+
+                                    <div class="flex gap-md mt-6">
+                                        <button type="button" class="btn btn-secondary w-full" onclick="document.getElementById('investment-modal').classList.add('hidden')">Cancel</button>
+                                        <button type="submit" class="btn btn-primary w-full">Save</button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                         <div id="view-settings" class="view-section hidden">
                             <h2 class="text-xl mb-4" data-i18n="nav_settings">Settings</h2>

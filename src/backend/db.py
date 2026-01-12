@@ -138,6 +138,24 @@ def init_db():
         )
     ''')
 
+    # Create Investment Transactions Table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS investment_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            symbol TEXT NOT NULL,
+            type TEXT NOT NULL, -- 'buy', 'sell', 'dividend'
+            quantity REAL DEFAULT 0,
+            price REAL DEFAULT 0,
+            fee REAL DEFAULT 0,
+            tax REAL DEFAULT 0, -- TNCN for dividends/selling
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+
     # Initialize default exchange rate if not exists
     c.execute('SELECT value FROM settings WHERE key = ?', ('exchange_rate_usd_vnd',))
     if not c.fetchone():

@@ -202,6 +202,30 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
              self.wfile.write(json.dumps(settings).encode())
 
 
+        elif path == '/api/investments':
+             # Fetch all investment transactions
+             # In a real app we would get user_id from session
+             user_id = 1
+             
+             rows = query_db('SELECT * FROM investment_transactions WHERE user_id = ? ORDER BY date DESC', (user_id,))
+             
+             result = []
+             for row in rows:
+                 result.append({
+                     "id": row['id'],
+                     "date": row['date'],
+                     "symbol": row['symbol'],
+                     "type": row['type'],
+                     "quantity": row['quantity'],
+                     "price": row['price'],
+                     "fee": row['fee'],
+                     "tax": row['tax'],
+                     "notes": row['notes']
+                 })
+             
+             self._set_headers(200)
+             self.wfile.write(json.dumps(result).encode())
+
         else:
              self._set_headers(404)
              self.wfile.write(json.dumps({"error": "Endpoint not found"}).encode())
@@ -495,6 +519,41 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                 print(f"Settings update error: {e}")
                 self._set_headers(500)
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
+
+        elif path == '/api/investments/create':
+            user_id = data.get('user_id', 1)
+            date = data.get('date')
+            symbol = data.get('symbol')
+            trans_type = data.get('type')
+            quantity = float(data.get('quantity', 0))
+            price = float(data.get('price', 0))
+            fee = float(data.get('fee', 0))
+            tax = float(data.get('tax', 0))
+            notes = data.get('notes', '')
+            
+            conn = get_db_connection()
+            c = conn.cursor()
+            c.execute('''
+                INSERT INTO investment_transactions (user_id, date, symbol, type, quantity, price, fee, tax, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, date, symbol, trans_type, quantity, price, fee, tax, notes))
+            conn.commit()
+            conn.close()
+            
+            self._set_headers(201)
+            self.wfile.write(json.dumps({"success": True}).encode())
+
+        elif path == '/api/investments/delete':
+            trans_id = data.get('id')
+            
+            conn = get_db_connection()
+            c = conn.cursor()
+            c.execute('DELETE FROM investment_transactions WHERE id = ?', (trans_id,))
+            conn.commit()
+            conn.close()
+            
+            self._set_headers(200)
+            self.wfile.write(json.dumps({"success": True}).encode())
 
         else:
             self._set_headers(404)

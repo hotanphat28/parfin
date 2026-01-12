@@ -40,11 +40,14 @@ parfin/
 │   │   └── server.py       # HTTP request handlers and API routes
 │   ├── frontend/           # Web interface assets
 │   │   ├── css/            # Stylesheets
+│   │   │   ├── style.css
+│   │   │   └── variables.css
 │   │   ├── images/         # Icons and logo
 │   │   ├── js/             # Application logic (app.js, translations.js)
 │   │   └── index.html      # Main entry point
 │   └── scripts/            # Utility scripts (e.g., mock data generator)
-├── tests/                  # Verification and performance tests
+├── tests/                  # Verification, performance, and import/export tests
+├── test_api.py             # Simple API connectivity test
 ├── run.py                  # Application entry point
 ├── README.md               # Product documentation
 └── LICENSE                 # MIT License
@@ -138,6 +141,14 @@ The `verify_api.py` script covers:
 - **Login**: Verifies authentication with default credentials.
 - **Create Transaction**: Creates a sample expense transaction.
 - **Get Transactions**: Verifies retrieval of created transactions.
+
+### Import/Export Testing
+
+1.  **Run the Import/Export Test**:
+    ```bash
+    python tests/test_import_export.py
+    ```
+    This validates the JSON and CSV export/import functionality.
 
 ### Performance Testing
 
