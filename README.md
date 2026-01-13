@@ -30,30 +30,6 @@ ParFin is a finance management web application designed for couples. It helps tr
 - **Frontend**: HTML5, CSS3, JavaScript (Vanilla), Chart.js
 - **Database**: SQLite
 
-## Directory Structure
-
-```
-parfin/
-├── data/                   # SQLite database storage (created on run)
-├── src/
-│   ├── backend/            # Python server logic and database handling
-│   │   ├── db.py           # Database connection and initialization
-│   │   └── server.py       # HTTP request handlers and API routes
-│   ├── frontend/           # Web interface assets
-│   │   ├── css/            # Stylesheets
-│   │   │   ├── style.css
-│   │   │   └── variables.css
-│   │   ├── images/         # Icons and logo
-│   │   ├── js/             # Application logic (app.js, translations.js)
-│   │   └── index.html      # Main entry point
-│   └── scripts/            # Utility scripts (e.g., mock data generator)
-├── tests/                  # Verification, performance, and import/export tests
-├── test_api.py             # Simple API connectivity test
-├── run.py                  # Application entry point
-├── README.md               # Product documentation
-└── LICENSE                 # MIT License
-```
-
 ## Getting Started
 
 ### Prerequisites
