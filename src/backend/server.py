@@ -215,6 +215,7 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                      "id": row['id'],
                      "date": row['date'],
                      "symbol": row['symbol'],
+                     "asset_type": row['asset_type'] if 'asset_type' in row.keys() else 'stock',
                      "type": row['type'],
                      "quantity": row['quantity'],
                      "price": row['price'],
@@ -524,6 +525,7 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             user_id = data.get('user_id', 1)
             date = data.get('date')
             symbol = data.get('symbol')
+            asset_type = data.get('asset_type', 'stock')
             trans_type = data.get('type')
             quantity = float(data.get('quantity', 0))
             price = float(data.get('price', 0))
@@ -534,9 +536,9 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             conn = get_db_connection()
             c = conn.cursor()
             c.execute('''
-                INSERT INTO investment_transactions (user_id, date, symbol, type, quantity, price, fee, tax, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (user_id, date, symbol, trans_type, quantity, price, fee, tax, notes))
+                INSERT INTO investment_transactions (user_id, date, symbol, asset_type, type, quantity, price, fee, tax, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (user_id, date, symbol, asset_type, trans_type, quantity, price, fee, tax, notes))
             conn.commit()
             conn.close()
             

@@ -11,6 +11,7 @@ ParFin is a finance management web application designed for couples. It helps tr
 - **Multi-lingual Support**: Supports **English** (default) and **Vietnamese**, switchable via the UI.
 - **Fixed Items Management**: Manage recurring monthly items (e.g., Salary, Rent) and auto-generate transactions for Expenses, Incomes, and **Allocations**.
 - **Fund Allocation**: Organize finances into specific funds (Serving, Support, Investment, Together Budget).
+- **Investment Portfolio**: Track and manage **Stocks, Bonds, Crypto, and Fund Certificates** with real-time portfolio holdings and P/L tracking.
 - **Flexible Transactions**: Support for Expenses, Incomes, and **Allocations (Transfers)**.
 - **Smart Form Layouts**: Dynamic UI that adapts to the transaction type (e.g., side-by-side "From/To" layout for transfers).
 - **Exchange Rate Management**: Set custom exchange rates (USD/VND) for accurate currency conversion.

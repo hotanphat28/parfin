@@ -257,24 +257,26 @@
                             <p class="text-secondary" data-i18n="coming_soon">Coming soon...</p>
                         </div>
                         <div id="view-investment" class="view-section hidden">
-                             <!-- Investment Overview -->
+                            <!-- Investment Overview -->
                             <div class="dashboard-overview" style="margin-bottom: var(--space-md)">
                                 <div class="stats-hero">
-                                     <div class="card stat-card hero-card">
+                                    <div class="card stat-card hero-card">
                                         <p class="text-secondary text-sm" data-i18n="total_invested">Total Invested</p>
                                         <h2 class="text-xxl text-info" id="inv-total-invested">0 ₫</h2>
                                     </div>
                                     <div class="card stat-card hero-card">
-                                        <p class="text-secondary text-sm" data-i18n="current_market_value">Current Market Value</p>
+                                        <p class="text-secondary text-sm" data-i18n="current_market_value">Current
+                                            Market Value</p>
                                         <h2 class="text-xxl text-primary" id="inv-current-value">0 ₫</h2>
                                         <div class="text-xs text-secondary mt-sm">
-                                            <span data-i18n="profit_loss_label">Profit/Loss</span>: <span id="inv-total-pl">0%</span>
+                                            <span data-i18n="profit_loss_label">Profit/Loss</span>: <span
+                                                id="inv-total-pl">0%</span>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="stats-secondary">
                                     <div class="card stat-card">
-                                            <span data-i18n="available_cash">Available Cash</span>
+                                        <span data-i18n="available_cash">Available Cash</span>
                                         </h2>
                                         <div class="text-xs text-secondary mt-sm" data-i18n="investment_fund_label">
                                             (In Investment Fund)
@@ -285,9 +287,12 @@
 
                             <!-- Actions -->
                             <div class="card flex gap-md" style="margin-bottom: var(--space-md)">
-                                <button class="btn btn-success" onclick="App.openInvestmentModal('buy')" data-i18n="buy_stock_btn">Buy Stock</button>
-                                <button class="btn btn-danger" onclick="App.openInvestmentModal('sell')" data-i18n="sell_stock_btn">Sell Stock</button>
-                                <button class="btn btn-primary" onclick="App.openInvestmentModal('dividend')" data-i18n="record_dividend_btn">Record Dividend</button>
+                                <button class="btn btn-success" onclick="App.openInvestmentModal('buy')"
+                                    data-i18n="buy_stock_btn">Buy Stock</button>
+                                <button class="btn btn-danger" onclick="App.openInvestmentModal('sell')"
+                                    data-i18n="sell_stock_btn">Sell Stock</button>
+                                <button class="btn btn-primary" onclick="App.openInvestmentModal('dividend')"
+                                    data-i18n="record_dividend_btn">Record Dividend</button>
                             </div>
 
                             <!-- Portfolio Holdings -->
@@ -296,17 +301,27 @@
                                 <div class="transaction-list-container">
                                     <table class="w-full text-left border-collapse" id="holdings-table">
                                         <thead>
-                                            <tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
+                                            <tr class="text-secondary text-sm border-b"
+                                                style="border-color: var(--bg-accent)">
+                                                <th class="p-4 font-medium" data-i18n="asset_type_label">Asset Type</th>
                                                 <th class="p-4 font-medium" data-i18n="table_symbol">Symbol</th>
-                                                <th class="p-4 font-medium text-right" data-i18n="table_quantity">Quantity</th>
-                                                <th class="p-4 font-medium text-right" data-i18n="table_avg_price">Avg Price</th>
-                                                <th class="p-4 font-medium text-right" data-i18n="table_mkt_price">Mkt Price</th>
-                                                 <th class="p-4 font-medium text-right" data-i18n="table_total_value">Total Value</th>
-                                                <th class="p-4 font-medium text-right" data-i18n="table_pl_percent">P/L %</th>
+                                                <th class="p-4 font-medium text-right" data-i18n="table_quantity">
+                                                    Quantity</th>
+                                                <th class="p-4 font-medium text-right" data-i18n="table_avg_price">Avg
+                                                    Price</th>
+                                                <th class="p-4 font-medium text-right" data-i18n="table_mkt_price">Mkt
+                                                    Price</th>
+                                                <th class="p-4 font-medium text-right" data-i18n="table_total_value">
+                                                    Total Value</th>
+                                                <th class="p-4 font-medium text-right" data-i18n="table_pl_percent">P/L
+                                                    %</th>
                                             </tr>
                                         </thead>
                                         <tbody id="holdings-list-body">
-                                            <tr><td colspan="6" class="text-center p-4" data-i18n="no_holdings">No holdings</td></tr>
+                                            <tr>
+                                                <td colspan="6" class="text-center p-4" data-i18n="no_holdings">No
+                                                    holdings</td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -318,57 +333,78 @@
                                 <div class="transaction-list-container">
                                     <table class="w-full text-left border-collapse" id="inv-history-table">
                                         <thead>
-                                            <tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
+                                            <tr class="text-secondary text-sm border-b"
+                                                style="border-color: var(--bg-accent)">
                                                 <th class="p-4 font-medium" data-i18n="table_date">Date</th>
+                                                <th class="p-4 font-medium" data-i18n="asset_type_label">Asset Type</th>
                                                 <th class="p-4 font-medium" data-i18n="table_symbol">Symbol</th>
                                                 <th class="p-4 font-medium" data-i18n="table_activity">Activity</th>
                                                 <th class="p-4 font-medium text-right" data-i18n="table_qty">Qty</th>
-                                                <th class="p-4 font-medium text-right" data-i18n="table_price">Price</th>
-                                                <th class="p-4 font-medium text-right" data-i18n="table_total_amount">Total</th>
-                                                <th class="p-4 font-medium text-right" data-i18n="table_action">Action</th>
+                                                <th class="p-4 font-medium text-right" data-i18n="table_price">Price
+                                                </th>
+                                                <th class="p-4 font-medium text-right" data-i18n="table_total_amount">
+                                                    Total</th>
+                                                <th class="p-4 font-medium text-right" data-i18n="table_action">Action
+                                                </th>
                                             </tr>
                                         </thead>
                                         <tbody id="inv-history-body">
-                                            <tr><td colspan="7" class="text-center p-4" data-i18n="no_transactions">No transactions</td></tr>
+                                            <tr>
+                                                <td colspan="7" class="text-center p-4" data-i18n="no_transactions">No
+                                                    transactions</td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
                         </div>
 
-                         <!-- Money Modal (Investment) -->
+                        <!-- Money Modal (Investment) -->
                         <div id="investment-modal" class="modal-overlay hidden">
                             <div class="modal-content card">
                                 <h2 class="text-xl mb-4" id="inv-modal-title">Buy Stock</h2>
                                 <form id="investment-form">
                                     <input type="hidden" name="type" id="inv-type">
-                                    
+
                                     <div class="input-group">
                                         <label class="input-label" data-i18n="date_label">Date</label>
                                         <input type="date" name="date" class="input-field" required>
                                     </div>
 
                                     <div class="input-group">
-                                        <label class="input-label" data-i18n="symbol_label">Symbol</label>
-                                        <input type="text" name="symbol" class="input-field" placeholder="e.g. VNM, FPT" data-i18n-placeholder="symbol_placeholder" required style="text-transform: uppercase">
+                                        <label class="input-label" data-i18n="asset_type_label">Asset Type</label>
+                                        <select name="asset_type" id="inv-asset-type" class="input-field">
+                                            <option value="stock" data-i18n="asset_type_stock">Stock</option>
+                                            <option value="bond" data-i18n="asset_type_bond">Bond</option>
+                                            <option value="crypto" data-i18n="asset_type_crypto">Crypto</option>
+                                            <option value="fund" data-i18n="asset_type_fund">Fund Certificate</option>
+                                        </select>
                                     </div>
 
-                                     <div class="input-group" id="inv-qty-group">
+                                    <div class="input-group">
+                                        <label class="input-label" data-i18n="symbol_label">Symbol</label>
+                                        <input type="text" name="symbol" class="input-field" placeholder="e.g. VNM, FPT"
+                                            data-i18n-placeholder="symbol_placeholder" required
+                                            style="text-transform: uppercase">
+                                    </div>
+
+                                    <div class="input-group" id="inv-qty-group">
                                         <label class="input-label" data-i18n="quantity_label">Quantity</label>
                                         <input type="number" name="quantity" class="input-field" step="0.01">
                                     </div>
 
-                                     <div class="input-group" id="inv-price-group">
-                                        <label class="input-label" data-i18n="price_per_share_label">Price per Share</label>
+                                    <div class="input-group" id="inv-price-group">
+                                        <label class="input-label" data-i18n="price_per_share_label">Price per
+                                            Share</label>
                                         <input type="number" name="price" class="input-field" step="0.01">
                                     </div>
 
-                                     <div class="input-group">
+                                    <div class="input-group">
                                         <label class="input-label" data-i18n="fee_label">Fee</label>
                                         <input type="number" name="fee" class="input-field" step="0.01" value="0">
                                     </div>
 
-                                     <div class="input-group hidden" id="inv-tax-group">
+                                    <div class="input-group hidden" id="inv-tax-group">
                                         <label class="input-label" data-i18n="tax_label">Tax (TNCN)</label>
                                         <input type="number" name="tax" class="input-field" step="0.01" value="0">
                                     </div>
@@ -379,8 +415,11 @@
                                     </div>
 
                                     <div class="flex gap-md mt-6">
-                                        <button type="button" class="btn btn-secondary w-full" onclick="document.getElementById('investment-modal').classList.add('hidden')" data-i18n="cancel_btn">Cancel</button>
-                                        <button type="submit" class="btn btn-primary w-full" data-i18n="save_btn">Save</button>
+                                        <button type="button" class="btn btn-secondary w-full"
+                                            onclick="document.getElementById('investment-modal').classList.add('hidden')"
+                                            data-i18n="cancel_btn">Cancel</button>
+                                        <button type="submit" class="btn btn-primary w-full"
+                                            data-i18n="save_btn">Save</button>
                                     </div>
                                 </form>
                             </div>

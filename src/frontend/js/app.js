@@ -309,6 +309,9 @@ const App = {
 		form.reset();
 		form.querySelector('input[name="date"]').valueAsDate = new Date();
 		document.getElementById('inv-type').value = type;
+		// Reset asset type
+		const assetTypeSelect = form.querySelector('select[name="asset_type"]');
+		if (assetTypeSelect) assetTypeSelect.value = 'stock';
 
 		// Dynamic UI based on type
 		const qtyGroup = document.getElementById('inv-qty-group');
@@ -426,6 +429,7 @@ const App = {
 
 			tr.innerHTML = `
                 <td class="p-4">${t.date}</td>
+                <td class="p-4"><span class="badge badge-info">${this.t('asset_type_' + (t.asset_type || 'stock'))}</span></td>
                 <td class="p-4 font-bold">${t.symbol}</td>
                 <td class="p-4"><span class="badge badge-${t.type === 'buy' ? 'info' : (t.type === 'dividend' ? 'success' : 'warning')}">${this.t('inv_type_' + t.type)}</span></td>
                 <td class="p-4 text-right">${t.quantity}</td>
@@ -468,16 +472,18 @@ const App = {
 		const sortedInv = [...investments].sort((a, b) => new Date(a.date) - new Date(b.date));
 
 		sortedInv.forEach(t => {
-			if (!portfolio[t.symbol]) portfolio[t.symbol] = { qty: 0, totalCost: 0 };
+			const assetType = t.asset_type || 'stock';
+			const key = `${assetType}:${t.symbol}`;
+			if (!portfolio[key]) portfolio[key] = { qty: 0, totalCost: 0, symbol: t.symbol, asset_type: assetType };
 
 			if (t.type === 'buy') {
-				portfolio[t.symbol].totalCost += (t.quantity * t.price) + t.fee;
-				portfolio[t.symbol].qty += t.quantity;
+				portfolio[key].totalCost += (t.quantity * t.price) + t.fee;
+				portfolio[key].qty += t.quantity;
 			} else if (t.type === 'sell') {
-				if (portfolio[t.symbol].qty > 0) {
-					const avgCost = portfolio[t.symbol].totalCost / portfolio[t.symbol].qty;
-					portfolio[t.symbol].totalCost -= (avgCost * t.quantity);
-					portfolio[t.symbol].qty -= t.quantity;
+				if (portfolio[key].qty > 0) {
+					const avgCost = portfolio[key].totalCost / portfolio[key].qty;
+					portfolio[key].totalCost -= (avgCost * t.quantity);
+					portfolio[key].qty -= t.quantity;
 				}
 			}
 		});
@@ -486,9 +492,11 @@ const App = {
 		let totalInvested = 0;
 		let hasHoldings = false;
 
-		for (const [symbol, data] of Object.entries(portfolio)) {
+		for (const [key, data] of Object.entries(portfolio)) {
 			if (data.qty > 0.0001) { // Ignore near zero float errors
 				hasHoldings = true;
+				const symbol = data.symbol;
+				const assetType = data.asset_type;
 				const avgPrice = data.totalCost / data.qty;
 				const mktPrice = avgPrice; // Mock: Current Price = Avg Price (0% P/L) for now since we don't have live data
 				const totalValue = data.qty * mktPrice;
@@ -498,6 +506,7 @@ const App = {
 				const tr = document.createElement('tr');
 				tr.className = 'border-b text-sm';
 				tr.innerHTML = `
+                    <td class="p-4"><span class="badge badge-info">${this.t('asset_type_' + assetType)}</span></td>
                     <td class="p-4 font-bold">${symbol}</td>
                     <td class="p-4 text-right">${data.qty.toFixed(2)}</td>
                     <td class="p-4 text-right">${this.formatCurrency(avgPrice)}</td>

@@ -145,6 +145,7 @@ def init_db():
             user_id INTEGER NOT NULL,
             date TEXT NOT NULL,
             symbol TEXT NOT NULL,
+            asset_type TEXT DEFAULT 'stock', -- 'stock', 'bond', 'crypto', 'fund'
             type TEXT NOT NULL, -- 'buy', 'sell', 'dividend'
             quantity REAL DEFAULT 0,
             price REAL DEFAULT 0,
@@ -155,6 +156,13 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     ''')
+
+    # Migration: Add asset_type column to investment_transactions if it doesn't exist
+    try:
+        c.execute('SELECT asset_type FROM investment_transactions LIMIT 1')
+    except sqlite3.OperationalError:
+        print("Migrating database: Adding asset_type column to investment_transactions table...")
+        c.execute("ALTER TABLE investment_transactions ADD COLUMN asset_type TEXT DEFAULT 'stock'")
 
     # Initialize default exchange rate if not exists
     c.execute('SELECT value FROM settings WHERE key = ?', ('exchange_rate_usd_vnd',))
