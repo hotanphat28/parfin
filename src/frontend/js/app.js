@@ -321,27 +321,35 @@ const App = {
 		taxGroup.classList.add('hidden');
 
 		if (type === 'buy') {
-			title.textContent = 'Buy Stock';
+			title.textContent = this.t('buy_stock_btn');
+			title.setAttribute('data-i18n', 'buy_stock_btn');
 		} else if (type === 'sell') {
-			title.textContent = 'Sell Stock';
+			title.textContent = this.t('sell_stock_btn');
+			title.setAttribute('data-i18n', 'sell_stock_btn');
 			taxGroup.classList.remove('hidden');
 		} else if (type === 'dividend') {
-			title.textContent = 'Record Dividend';
+			title.textContent = this.t('record_dividend_btn');
+			title.setAttribute('data-i18n', 'record_dividend_btn');
 			qtyGroup.classList.add('hidden'); // Usually just total amount for dividend, or per share? 
 			// Let's keep it simple: Record TOTAL dividend amount. 
 			// But user might want per share. 
 			// For now, let's treat "Price" as "Total Amount" for Dividend if Qty is 0?
 			// Or keep Qty and Price and calc total.
-			title.textContent = 'Record Dividend (Total Amount in Price)';
+			title.textContent = this.t('record_dividend_title');
+			title.setAttribute('data-i18n', 'record_dividend_title');
 			// Simplify for user: Quantity = 1, Price = Total Dividend Amount
 			qtyGroup.classList.add('hidden');
 			form.querySelector('input[name="quantity"]').value = 1;
-			document.querySelector('#inv-price-group label').textContent = 'Total Dividend Amount';
+			const priceLabel = document.querySelector('#inv-price-group label');
+			priceLabel.textContent = this.t('total_dividend_amount');
+			priceLabel.setAttribute('data-i18n', 'total_dividend_amount');
 			taxGroup.classList.remove('hidden');
 		}
 
 		if (type !== 'dividend') {
-			document.querySelector('#inv-price-group label').textContent = 'Price per Share';
+			const priceLabel = document.querySelector('#inv-price-group label');
+			priceLabel.textContent = this.t('price_per_share_label');
+			priceLabel.setAttribute('data-i18n', 'price_per_share_label');
 		}
 
 		modal.classList.remove('hidden');
@@ -378,7 +386,7 @@ const App = {
 			if (response.ok) {
 				this.elements.investmentModal.classList.add('hidden');
 				this.fetchInvestments();
-				this.showToast('Investment transaction saved', 'success');
+				this.showToast(this.t('toast_inv_saved'), 'success');
 			} else {
 				this.showToast('Error saving transaction', 'error');
 			}
@@ -398,8 +406,8 @@ const App = {
 		const investments = this.state.investments;
 
 		if (investments.length === 0) {
-			historyBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">No transactions</td></tr>`;
-			holdingsBody.innerHTML = `<tr><td colspan="6" class="text-center p-4">No holdings</td></tr>`;
+			historyBody.innerHTML = `<tr><td colspan="7" class="text-center p-4">${this.t('no_transactions')}</td></tr>`;
+			holdingsBody.innerHTML = `<tr><td colspan="6" class="text-center p-4">${this.t('no_holdings')}</td></tr>`;
 			return;
 		}
 
@@ -419,7 +427,7 @@ const App = {
 			tr.innerHTML = `
                 <td class="p-4">${t.date}</td>
                 <td class="p-4 font-bold">${t.symbol}</td>
-                <td class="p-4"><span class="badge badge-${t.type === 'buy' ? 'info' : (t.type === 'dividend' ? 'success' : 'warning')}">${t.type.toUpperCase()}</span></td>
+                <td class="p-4"><span class="badge badge-${t.type === 'buy' ? 'info' : (t.type === 'dividend' ? 'success' : 'warning')}">${this.t('inv_type_' + t.type)}</span></td>
                 <td class="p-4 text-right">${t.quantity}</td>
                 <td class="p-4 text-right">${this.formatCurrency(t.price)}</td>
                 <td class="p-4 text-right font-bold ${colorClass}">${sign} ${this.formatCurrency(total)}</td>
