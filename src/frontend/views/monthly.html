@@ -1,0 +1,116 @@
+<!-- New Dashboard Overview Layout -->
+<div class="dashboard-overview">
+	<!-- Left Column: Hero Stats -->
+	<div class="stats-hero">
+		<div class="card stat-card hero-card">
+			<p class="text-secondary text-sm" data-i18n="total_together">Total Together
+				Budget
+			</p>
+			<h2 class="text-xxl text-success" id="total-together">0 ₫</h2>
+			<div class="flex justify-between text-sm text-secondary mt-md">
+				<span>💵 <span id="together-cash">0</span></span>
+				<span>🏦 <span id="together-bank">0</span></span>
+			</div>
+		</div>
+		<div class="card stat-card hero-card">
+			<p class="text-secondary text-sm" data-i18n="monthly_expense">Expense (Month)
+			</p>
+			<h2 class="text-xxl text-danger" id="monthly-expense">0 ₫</h2>
+		</div>
+	</div>
+
+	<!-- Right Column: Secondary Stats Grid -->
+	<div class="stats-secondary">
+		<div class="card stat-card">
+			<p class="text-secondary text-sm" data-i18n="total_balance">Total Balance</p>
+			<h2 class="text-xl text-success" id="total-balance">0 ₫</h2>
+			<div class="flex justify-between text-xs text-secondary mt-sm">
+				<span>💵 <span id="balance-cash">0</span></span>
+				<span>🏦 <span id="balance-bank">0</span></span>
+			</div>
+		</div>
+		<div class="card stat-card">
+			<p class="text-secondary text-sm" data-i18n="monthly_income">Income (Month)</p>
+			<h2 class="text-xl text-success" id="monthly-income">0 ₫</h2>
+		</div>
+
+		<div class="card stat-card">
+			<p class="text-secondary text-sm" data-i18n="total_saving">Total Saving</p>
+			<h2 class="text-xl text-primary" id="total-saving">0 ₫</h2>
+			<div class="flex justify-between text-xs text-secondary mt-sm">
+				<span>💵 <span id="saving-cash">0</span></span>
+				<span>🏦 <span id="saving-bank">0</span></span>
+			</div>
+		</div>
+		<div class="card stat-card">
+			<p class="text-secondary text-sm" data-i18n="total_support">Total Support</p>
+			<h2 class="text-xl text-warning" id="total-support">0 ₫</h2>
+			<div class="flex justify-between text-xs text-secondary mt-sm">
+				<span>💵 <span id="support-cash">0</span></span>
+				<span>🏦 <span id="support-bank">0</span></span>
+			</div>
+		</div>
+		<div class="card stat-card">
+			<p class="text-secondary text-sm" data-i18n="total_investment">Total Investment
+			</p>
+			<h2 class="text-xl text-info" id="total-investment">0 ₫</h2>
+			<div class="flex justify-between text-xs text-secondary mt-sm">
+				<span>💵 <span id="investment-cash">0</span></span>
+				<span>🏦 <span id="investment-bank">0</span></span>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- Allocation Chart -->
+<div class="card" style="margin-bottom: var(--space-md)">
+	<div class="flex justify-between items-center" style="margin-bottom: var(--space-md)">
+		<h3 class="text-lg" data-i18n="expense_chart">Expense Chart</h3>
+		<button id="toggle-chart-btn" class="btn-icon">
+			👁️
+		</button>
+	</div>
+	<div id="chart-container" style="height: 300px; position: relative;">
+		<canvas id="allocation-chart"></canvas>
+	</div>
+</div>
+
+<div class="card">
+	<div class="flex justify-between items-center" style="margin-bottom: var(--space-md)">
+		<h3 class="text-lg" data-i18n="recent_transactions">Recent Transactions</h3>
+		<div class="flex gap-sm">
+			<select class="input-field" style="width: auto; padding: 0.5rem" id="filter-type">
+				<option value="month" data-i18n="filter_month">Month</option>
+				<option value="all" data-i18n="filter_all">All</option>
+			</select>
+			<input type="month" id="filter-month" class="input-field" style="width: auto; padding: 0.5rem">
+		</div>
+	</div>
+	<div class="transaction-list-container">
+		<table class="w-full text-left border-collapse" id="transaction-table">
+			<thead>
+				<tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
+					<th class="p-4 font-medium cursor-pointer hover-accent" data-sort="date">
+						<span data-i18n="table_date">Date</span> <span class="sort-icon"></span>
+					</th>
+					<th class="p-4 font-medium" data-i18n="table_category">Category</th>
+					<th class="p-4 font-medium" data-i18n="table_description">Description
+					</th>
+					<th class="p-4 font-medium text-right cursor-pointer hover-accent" data-sort="amount">
+						<span data-i18n="table_amount">Amount</span> <span class="sort-icon"></span>
+					</th>
+					<th class="p-4 font-medium" data-i18n="table_source">Source</th>
+					<th class="p-4 font-medium text-right" data-i18n="table_action">Action
+					</th>
+				</tr>
+			</thead>
+			<tbody id="transaction-list-body">
+				<!-- Transactions will be injected here -->
+				<tr>
+					<td colspan="6" class="p-4 text-center text-secondary" data-i18n="loading_transactions">
+						Loading transactions...</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</div>

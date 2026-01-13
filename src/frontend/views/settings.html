@@ -1,0 +1,24 @@
+<h2 class="text-xl mb-4" data-i18n="nav_settings">Settings</h2>
+<div class="card" style="max-width: 400px">
+	<div class="input-group">
+		<label class="input-label" data-i18n="language_label">Language</label>
+		<select id="language-selector" class="input-field">
+			<option value="en">🇺🇸 English</option>
+			<option value="vi">🇻🇳 Tiếng Việt</option>
+		</select>
+	</div>
+	<div class="input-group">
+		<select id="theme-selector" class="input-field">
+			<option value="system" data-i18n="theme_system">🌓 System</option>
+			<option value="light" data-i18n="theme_light">☀️ Light</option>
+			<option value="dark" data-i18n="theme_dark">🌙 Dark</option>
+		</select>
+	</div>
+	<div class="input-group">
+		<label class="input-label" data-i18n="exchange_rate_label">Exchange Rate</label>
+		<input type="number" id="exchange-rate-input" class="input-field" placeholder="25000">
+		<p class="text-secondary text-xs mt-sm" data-i18n="exchange_rate_help">Set the
+			exchange rate.</p>
+	</div>
+	<button id="update-rate-btn" class="btn btn-primary w-full" data-i18n="update_rate_btn">Update Rate</button>
+</div>

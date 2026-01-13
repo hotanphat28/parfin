@@ -1,5 +1,5 @@
 
-const translations = {
+export const translations = {
 	en: {
 		app_title: "ParFin",
 		app_subtitle: "Family Finance Management",
