@@ -69,6 +69,18 @@ export const FixedItems = {
 		tbody.innerHTML = '';
 
 		const items = state.fixedItems || [];
+
+		const generateBtn = document.getElementById('generate-fixed-btn');
+		if (generateBtn) {
+			if (items.length === 0) {
+				generateBtn.disabled = true;
+				generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+			} else {
+				generateBtn.disabled = false;
+				generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+			}
+		}
+
 		if (items.length === 0) {
 			tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-secondary">${t('no_transactions')}</td></tr>`;
 			return;

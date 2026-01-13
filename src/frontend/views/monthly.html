@@ -79,11 +79,27 @@
 	<div class="flex justify-between items-center" style="margin-bottom: var(--space-md)">
 		<h3 class="text-lg" data-i18n="recent_transactions">Recent Transactions</h3>
 		<div class="flex gap-sm">
-			<select class="input-field" style="width: auto; padding: 0.5rem" id="filter-type">
-				<option value="month" data-i18n="filter_month">Month</option>
-				<option value="all" data-i18n="filter_all">All</option>
+			<!-- Period Select -->
+			<select class="input-field" style="width: auto; padding: 0.5rem" id="filter-period">
+				<option value="this_month" data-i18n="filter_this_month">This Month</option>
+				<option value="last_month" data-i18n="filter_last_month">Last Month</option>
+				<option value="this_year" data-i18n="filter_this_year">This Year</option>
+				<option value="custom" data-i18n="filter_custom">Custom</option>
+				<option value="all" data-i18n="filter_all">All Time</option>
 			</select>
-			<input type="month" id="filter-month" class="input-field" style="width: auto; padding: 0.5rem">
+
+			<!-- Custom Date Inputs (Hidden by default) -->
+			<div id="filter-custom-dates" class="hidden flex gap-sm items-center">
+				<input type="date" id="filter-start-date" class="input-field" style="width: auto; padding: 0.5rem">
+				<span class="text-secondary">-</span>
+				<input type="date" id="filter-end-date" class="input-field" style="width: auto; padding: 0.5rem">
+			</div>
+
+			<!-- Category Filter -->
+			<select class="input-field" style="width: auto; padding: 0.5rem" id="filter-category">
+				<!-- Will be populated by JS -->
+				<option value="all" data-i18n="filter_all_categories">All Categories</option>
+			</select>
 		</div>
 	</div>
 	<div class="transaction-list-container">

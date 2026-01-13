@@ -89,32 +89,60 @@ export const Transactions = {
 
 	bindTableEvents() {
 		const tbody = document.getElementById('transaction-list-body');
-		if (!tbody) return; // Should exist if view loaded
+		if (!tbody) return;
 
-		// Filters
-		const filterType = document.getElementById('filter-type');
-		const filterMonth = document.getElementById('filter-month');
+		// Filter Elements
+		const filterPeriod = document.getElementById('filter-period');
+		const filterCustomDates = document.getElementById('filter-custom-dates');
+		const filterStartDate = document.getElementById('filter-start-date');
+		const filterEndDate = document.getElementById('filter-end-date');
+		const filterCategory = document.getElementById('filter-category');
 
-		if (filterType) {
-			filterType.addEventListener('change', (e) => {
-				const type = e.target.value;
-				state.filterParams.type = type;
-				if (type === 'month') {
-					filterMonth.classList.remove('hidden');
-				} else {
-					filterMonth.classList.add('hidden');
-				}
+		// Populate Categories
+		if (filterCategory) {
+			const categories = ['Salary', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Debt', 'Personal', 'Saving', 'Support', 'Investment', 'Other'];
+			filterCategory.innerHTML = '<option value="all" data-i18n="filter_all_categories">All Categories</option>';
+			categories.forEach(cat => {
+				const option = document.createElement('option');
+				option.value = cat;
+				option.textContent = getCategoryName(cat);
+				filterCategory.appendChild(option);
+			});
+			// Restore value
+			if (state.filterParams.category) filterCategory.value = state.filterParams.category;
+		}
+
+		if (filterPeriod) {
+			filterPeriod.value = state.filterParams.period || 'this_month';
+			filterPeriod.addEventListener('change', (e) => {
+				console.log('Filter changed:', e.target.value);
+				const period = e.target.value;
+				state.filterParams.period = period;
+				this.updateFilterUI();
 				this.fetchAndRender();
 			});
 		}
 
-		if (filterMonth) {
-			filterMonth.value = state.filterParams.month;
-			filterMonth.addEventListener('change', (e) => {
-				state.filterParams.month = e.target.value;
+		const dateChangeHandler = () => {
+			console.log('Custom dates changed');
+			state.filterParams.startDate = filterStartDate.value;
+			state.filterParams.endDate = filterEndDate.value;
+			this.fetchAndRender();
+		};
+
+		if (filterStartDate) filterStartDate.addEventListener('change', dateChangeHandler);
+		if (filterEndDate) filterEndDate.addEventListener('change', dateChangeHandler);
+
+		if (filterCategory) {
+			filterCategory.addEventListener('change', (e) => {
+				console.log('Category changed:', e.target.value);
+				state.filterParams.category = e.target.value;
 				this.fetchAndRender();
 			});
 		}
+
+		// Initial UI State
+		this.updateFilterUI();
 
 		// Sorting
 		document.querySelectorAll('th[data-sort]').forEach(th => {
@@ -124,12 +152,59 @@ export const Transactions = {
 		});
 	},
 
+	updateFilterUI() {
+		const filterPeriod = document.getElementById('filter-period');
+		const filterCustomDates = document.getElementById('filter-custom-dates');
+
+		if (state.filterParams.period === 'custom') {
+			filterCustomDates.classList.remove('hidden');
+		} else {
+			filterCustomDates.classList.add('hidden');
+		}
+	},
+
 	async fetchAndRender() {
+		console.log('Fetching transactions with params:', state.filterParams);
 		try {
+			// Calculate Dates based on Period
 			const params = { ...state.filterParams };
-			if (params.type === 'all') {
-				delete params.month;
+			const period = params.period || 'this_month';
+			const today = new Date();
+
+			const formatDate = (date) => {
+				const offset = date.getTimezoneOffset();
+				const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+				return localDate.toISOString().split('T')[0];
+			};
+
+			if (period === 'this_month') {
+				const start = new Date(today.getFullYear(), today.getMonth(), 1);
+				const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+				params.start_date = formatDate(start);
+				params.end_date = formatDate(end);
+			} else if (period === 'last_month') {
+				const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+				const end = new Date(today.getFullYear(), today.getMonth(), 0);
+				params.start_date = formatDate(start);
+				params.end_date = formatDate(end);
+			} else if (period === 'this_year') {
+				const start = new Date(today.getFullYear(), 0, 1);
+				const end = new Date(today.getFullYear(), 11, 31);
+				params.start_date = formatDate(start);
+				params.end_date = formatDate(end);
+			} else if (period === 'last_year') {
+				const start = new Date(today.getFullYear() - 1, 0, 1);
+				const end = new Date(today.getFullYear() - 1, 11, 31);
+				params.start_date = formatDate(start);
+				params.end_date = formatDate(end);
+			} else if (period === 'custom') {
+				params.start_date = params.startDate;
+				params.end_date = params.endDate;
 			}
+			// If 'all', no date params sent
+
+			console.log('Computed API params:', params);
+
 			const data = await Api.getTransactions(params);
 			state.transactions = data;
 			this.render();
@@ -285,6 +360,13 @@ export const Transactions = {
 		form.dataset.targetFund = transaction.fund || '';
 		form.dataset.targetSource = transaction.source || 'cash';
 
+		if (transaction.type === 'allocation') {
+			form.dataset.targetDestCategory = transaction.destination_category || '';
+		}
+
+		// Update form state (rebuilds options) BEFORE setting values
+		this.updateFormState();
+
 		form.category.value = transaction.category;
 		form.description.value = transaction.description || '';
 		form.date.value = transaction.date;
@@ -293,10 +375,8 @@ export const Transactions = {
 
 		if (transaction.type === 'allocation') {
 			form.destination.value = transaction.destination || 'bank';
-			form.dataset.targetDestCategory = transaction.destination_category || '';
 		}
 
-		this.updateFormState();
 		document.getElementById('modal-title').textContent = t('modal_edit_title');
 		this.showModal();
 	},
@@ -496,6 +576,9 @@ export const Transactions = {
 					else if (t.destination_category === 'Support') support[destSource] += amount;
 					else if (t.destination_category === 'Investment') investment[destSource] += amount;
 					else if (t.destination_category === 'Together') together[destSource] += amount;
+					else {
+						total[destSource] += amount;
+					}
 				}
 			}
 		});

@@ -19,8 +19,15 @@ export const Api = {
 
 	async getTransactions(params = {}) {
 		let url = '/api/transactions';
-		if (params.month) {
-			url += `?month=${params.month}`;
+		const queryParams = [];
+		if (params.month) queryParams.push(`month=${params.month}`); // Legacy
+		if (params.start_date) queryParams.push(`start_date=${params.start_date}`);
+		if (params.end_date) queryParams.push(`end_date=${params.end_date}`);
+		if (params.category && params.category !== 'all') queryParams.push(`category=${params.category}`);
+		if (params.type && params.type !== 'all') queryParams.push(`type=${params.type}`);
+
+		if (queryParams.length > 0) {
+			url += '?' + queryParams.join('&');
 		}
 		const response = await fetch(url);
 		if (!response.ok) throw new Error('Failed to fetch transactions');
