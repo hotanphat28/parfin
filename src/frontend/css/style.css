@@ -127,7 +127,7 @@ body {
 /* Components */
 .card {
 	background: var(--bg-secondary);
-	border-radius: var(--radius-md);
+	border-radius: var(--radius-sm);
 	padding: var(--space-lg);
 	border: 1px solid var(--card-border);
 	box-shadow: var(--shadow-md);
@@ -145,7 +145,7 @@ body {
 	align-items: center;
 	justify-content: center;
 	padding: 0.75rem 1.5rem;
-	border-radius: var(--radius-md);
+	border-radius: var(--radius-sm);
 	font-weight: 600;
 	cursor: pointer;
 	transition: all 0.2s;
@@ -342,7 +342,7 @@ body {
 	background: var(--bg-secondary);
 	border: 1px solid var(--bg-accent);
 	padding: 1rem;
-	border-radius: var(--radius-md);
+	border-radius: var(--radius-sm);
 	margin-top: 0.5rem;
 	box-shadow: var(--shadow-lg);
 	animation: slideIn 0.3s ease-out;
@@ -481,7 +481,7 @@ body {
 	padding: var(--space-md);
 	text-decoration: none;
 	color: var(--text-secondary);
-	border-radius: var(--radius-md);
+	border-radius: var(--radius-sm);
 	transition: all 0.2s;
 	white-space: nowrap;
 	overflow: hidden;
@@ -530,7 +530,7 @@ body {
 	margin-bottom: var(--space-lg);
 	background: var(--bg-secondary);
 	padding: var(--space-md);
-	border-radius: var(--radius-md);
+	border-radius: var(--radius-sm);
 	border: 1px solid var(--card-border);
 }
 
@@ -579,6 +579,343 @@ body {
 }
 
 /* Ensure nice contrast for headers especially in dark mode if generic bg-secondary isn't enough, 
-   but it should be fine based on existing vars. 
    We added border-bottom to header in HTML already.
 */
+
+.align-middle {
+	vertical-align: middle;
+}
+
+/* Button Variants */
+.btn-success {
+	background-color: var(--success);
+	color: white;
+	box-shadow: var(--shadow-sm);
+}
+
+.btn-success:hover {
+	filter: brightness(1.1);
+	box-shadow: var(--shadow-md);
+}
+
+.btn-danger {
+	background-color: var(--danger);
+	color: white;
+	box-shadow: var(--shadow-sm);
+}
+
+.btn-danger:hover {
+	background-color: #dc2626;
+	/* Darker red */
+	box-shadow: var(--shadow-md);
+}
+
+/* Flex Alignment */
+.justify-end {
+	justify-content: flex-end;
+}
+
+/* --- Tailwind Compatibility Layer --- */
+
+/* Grid System */
+.grid {
+	display: grid;
+}
+
+.grid-cols-1 {
+	grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.gap-8 {
+	gap: 2rem;
+	/* 32px */
+}
+
+.gap-6 {
+	gap: 1.5rem;
+	/* 24px */
+}
+
+.gap-4 {
+	gap: 1rem;
+}
+
+.gap-2 {
+	gap: 0.5rem;
+}
+
+.items-start {
+	align-items: flex-start;
+}
+
+/* Responsive Grid */
+@media (min-width: 768px) {
+	.md\:grid-cols-2 {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.md\:col-span-2 {
+		grid-column: span 2 / span 2;
+	}
+}
+
+@media (min-width: 1024px) {
+	.lg\:grid-cols-3 {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.lg\:col-span-1 {
+		grid-column: span 1 / span 1;
+	}
+
+	.lg\:col-span-2 {
+		grid-column: span 2 / span 2;
+	}
+}
+
+@media (min-width: 1280px) {
+	.xl\:grid-cols-12 {
+		grid-template-columns: repeat(12, minmax(0, 1fr));
+	}
+
+	.xl\:col-span-4 {
+		grid-column: span 4 / span 4;
+	}
+
+	.xl\:col-span-8 {
+		grid-column: span 8 / span 8;
+	}
+}
+
+/* Sizing & Spacing */
+.max-w-5xl {
+	max-width: 64rem;
+}
+
+/* 1024px */
+.max-w-2xl {
+	max-width: 42rem;
+}
+
+/* 672px */
+.max-w-md {
+	max-width: 28rem;
+}
+
+/* 448px */
+.max-w-sm {
+	max-width: 24rem;
+}
+
+/* 384px */
+
+.w-full {
+	width: 100%;
+}
+
+.h-full {
+	height: 100%;
+}
+
+.w-1\/2 {
+	width: 50%;
+}
+
+.w-1\/4 {
+	width: 25%;
+}
+
+.w-32 {
+	width: 8rem;
+}
+
+.w-24 {
+	width: 6rem;
+}
+
+.w-10 {
+	width: 2.5rem;
+}
+
+.h-10 {
+	height: 2.5rem;
+}
+
+.mx-auto {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.mb-0 {
+	margin-bottom: 0px;
+}
+
+.mb-2 {
+	margin-bottom: 0.5rem;
+}
+
+.mb-4 {
+	margin-bottom: 1rem;
+}
+
+.mb-6 {
+	margin-bottom: 1.5rem;
+}
+
+.mt-1 {
+	margin-top: 0.25rem;
+}
+
+.mt-2 {
+	margin-top: 0.5rem;
+}
+
+.mt-8 {
+	margin-top: 2rem;
+}
+
+.mr-2 {
+	margin-right: 0.5rem;
+}
+
+.p-4 {
+	padding: 1rem;
+}
+
+.pt-4 {
+	padding-top: 1rem;
+}
+
+.pt-6 {
+	padding-top: 1.5rem;
+}
+
+.pb-2 {
+	padding-bottom: 0.5rem;
+}
+
+.pb-4 {
+	padding-bottom: 1rem;
+}
+
+.px-4 {
+	padding-left: 1rem;
+	padding-right: 1rem;
+}
+
+.px-8 {
+	padding-left: 2rem;
+	padding-right: 2rem;
+}
+
+.py-2 {
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
+}
+
+.py-4 {
+	padding-top: 1rem;
+	padding-bottom: 1rem;
+}
+
+.pl-4 {
+	padding-left: 1rem;
+}
+
+.pl-8 {
+	padding-left: 2rem;
+}
+
+.pr-4 {
+	padding-right: 1rem;
+}
+
+.pr-8 {
+	padding-right: 2rem;
+}
+
+.space-y-6>*+* {
+	margin-top: 1.5rem;
+}
+
+/* Typography & Visuals */
+.font-light {
+	font-weight: 300;
+}
+
+.font-medium {
+	font-weight: 500;
+}
+
+.font-semibold {
+	font-weight: 600;
+}
+
+.font-bold {
+	font-weight: 700;
+}
+
+.tracking-wider {
+	letter-spacing: 0.05em;
+}
+
+.uppercase {
+	text-transform: uppercase;
+}
+
+.text-right {
+	text-align: right;
+}
+
+.border {
+	border-width: 1px;
+	border-style: solid;
+}
+
+.border-t {
+	border-top-width: 1px;
+	border-top-style: solid;
+}
+
+.border-dashed {
+	border-style: dashed;
+}
+
+.rounded-md {
+	border-radius: var(--radius-md);
+}
+
+.rounded-lg {
+	border-radius: var(--radius-lg);
+}
+
+.rounded-full {
+	border-radius: 9999px;
+}
+
+.shadow-sm {
+	box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.overflow-hidden {
+	overflow: hidden;
+}
+
+.overflow-x-auto {
+	overflow-x: auto;
+}
+
+.transition-colors {
+	transition-property: background-color, border-color, color, fill, stroke;
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+	transition-duration: 150ms;
+}
+
+.bg-primary {
+	background-color: var(--bg-primary);
+}
+
+/* Table specific overrides */
+.table-auto {
+	table-layout: auto;
+}

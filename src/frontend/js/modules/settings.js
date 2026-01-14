@@ -24,6 +24,20 @@ export const Settings = {
 		if (rateInput && state.settings.exchange_rate_usd_vnd) {
 			rateInput.value = state.settings.exchange_rate_usd_vnd;
 		}
+
+		// Admin Check
+		const board = document.getElementById('admin-board');
+		if (state.currentUser && state.currentUser.role === 'admin') {
+			if (board) {
+				board.classList.remove('hidden');
+				this.loadUsers();
+				this.bindAdminEvents();
+			}
+		} else {
+			if (board) {
+				board.classList.add('hidden');
+			}
+		}
 	},
 
 	bindEvents() {
@@ -118,6 +132,176 @@ export const Settings = {
 			document.dispatchEvent(new Event('settings:updated'));
 		} catch (e) {
 			showToast(t('toast_error'), 'error');
+		}
+	},
+
+	bindAdminEvents() {
+		const createUserForm = document.getElementById('create-user-form');
+		const showAddUserBtn = document.getElementById('show-add-user-btn');
+		const cancelAddUserBtn = document.getElementById('cancel-add-user-btn');
+		const addUserModal = document.getElementById('add-user-modal');
+
+		if (createUserForm) {
+			createUserForm.addEventListener('submit', (e) => this.handleCreateUser(e));
+		}
+
+		if (showAddUserBtn && addUserModal) {
+			showAddUserBtn.addEventListener('click', () => {
+				addUserModal.classList.remove('hidden');
+			});
+		}
+
+		if (cancelAddUserBtn && addUserModal) {
+			cancelAddUserBtn.addEventListener('click', () => {
+				addUserModal.classList.add('hidden');
+				if (createUserForm) createUserForm.reset();
+			});
+		}
+
+		// Close on click outside
+		if (addUserModal) {
+			addUserModal.addEventListener('click', (e) => {
+				if (e.target === addUserModal) {
+					addUserModal.classList.add('hidden');
+				}
+			});
+		}
+	},
+
+	async loadUsers() {
+		try {
+			const users = await Api.getUsers();
+			const tbody = document.getElementById('user-list-body');
+			if (!tbody) return;
+			tbody.innerHTML = '';
+
+			users.forEach(user => {
+				const tr = document.createElement('tr');
+				tr.className = 'border-b hover:bg-accent transition-colors';
+				tr.style.borderBottom = '1px solid var(--bg-accent)';
+
+				// Initials for avatar
+				const initials = user.username.substring(0, 2).toUpperCase();
+				const avatarColor = user.role === 'admin' ? 'var(--primary)' : 'var(--secondary)';
+				const avatarTextColor = user.role === 'admin' ? 'var(--text-on-primary)' : '#fff';
+
+				tr.innerHTML = `
+					<td class="py-4 pl-4 pr-8 align-middle">
+						<div class="flex items-center gap-4">
+							<div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm" style="background-color: ${avatarColor}; color: ${avatarTextColor}; flex-shrink: 0">
+								${initials}
+							</div>
+							<div class="flex flex-col">
+								<span class="font-bold text-sm">${user.username}</span>
+								<span class="text-xs text-secondary">ID: ${user.id}</span>
+							</div>
+						</div>
+					</td>
+					<td class="py-4 px-4 align-middle">
+						<span class="badge ${user.role === 'admin' ? 'badge-primary' : 'badge-secondary'} text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+							${user.role}
+						</span>
+					</td>
+					<td class="py-4 pl-8 pr-4 align-middle text-right">
+						${user.role !== 'admin' ? `
+							<button class="btn-icon text-danger hover:bg-red-100 transition-colors p-2 rounded-full delete-user-btn" data-id="${user.id}" title="Delete User">
+								🗑️
+							</button>
+						` : ''}
+					</td>
+				`;
+
+				const delBtn = tr.querySelector('.delete-user-btn');
+				if (delBtn) {
+					delBtn.addEventListener('click', () => this.handleDeleteUser(user.id));
+				}
+
+				tbody.appendChild(tr);
+			});
+		} catch (e) {
+			console.error('Failed to load users', e);
+			showToast('Failed to load users', 'error');
+		}
+	},
+
+	async handleCreateUser(e) {
+		e.preventDefault();
+		const form = e.target;
+		const formData = new FormData(form);
+		const data = Object.fromEntries(formData.entries());
+
+		// Basic client-side validation
+		if (!data.username || !data.password) {
+			showToast('Please fill in all fields', 'error');
+			return;
+		}
+
+		try {
+			const response = await Api.createUser(data);
+			if (response.ok || response.success) {
+				showToast('User created successfully', 'success');
+				form.reset();
+				// Toggle visibility back
+				const addUserModal = document.getElementById('add-user-modal');
+				if (addUserModal) addUserModal.classList.add('hidden');
+
+				this.loadUsers();
+			} else {
+				showToast(response.error || 'Failed to create user', 'error');
+			}
+		} catch (e) {
+			showToast('Error creating user', 'error');
+		}
+	},
+
+	async handleDeleteUser(id) {
+		// Use custom confirmation modal
+		const modal = document.getElementById('confirmation-modal');
+		const title = document.getElementById('confirmation-title');
+		const msg = document.getElementById('confirmation-message');
+		const confirmBtn = document.getElementById('confirm-ok-btn');
+		const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+		if (!modal) {
+			// Fallback
+			if (!confirm('Delete this user?')) return;
+			this.performDeleteUser(id);
+			return;
+		}
+
+		// Setup Modal
+		title.textContent = 'Delete User';
+		msg.textContent = 'Are you sure you want to permanently delete this user? This action cannot be undone.';
+		modal.classList.remove('hidden');
+
+		// Cleanup old listeners
+		const newConfirmBtn = confirmBtn.cloneNode(true);
+		confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+		const newCancelBtn = cancelBtn.cloneNode(true);
+		cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+		newCancelBtn.addEventListener('click', () => {
+			modal.classList.add('hidden');
+		});
+
+		newConfirmBtn.addEventListener('click', async () => {
+			modal.classList.add('hidden');
+			await this.performDeleteUser(id);
+		});
+	},
+
+	async performDeleteUser(id) {
+		try {
+			const ok = await Api.deleteUser(id);
+			if (ok) {
+				showToast('User deleted', 'success');
+				this.loadUsers();
+			} else {
+				showToast('Failed to delete user', 'error');
+			}
+		} catch (e) {
+			showToast('Error deleting user', 'error');
 		}
 	}
 };

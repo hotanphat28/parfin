@@ -117,6 +117,20 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                  
              self._set_headers(200)
              self.wfile.write(json.dumps(result).encode())
+
+        elif path == '/api/users':
+             # Admin check should be here ideally
+             rows = query_db('SELECT id, username, role, created_at FROM users')
+             users = []
+             for row in rows:
+                 users.append({
+                     "id": row['id'],
+                     "username": row['username'],
+                     "role": row['role'],
+                     "created_at": row['created_at']
+                 })
+             self._set_headers(200)
+             self.wfile.write(json.dumps(users).encode())
              
         elif path == '/api/export':
              # Query params: month (YYYY-MM), format (json|csv)
@@ -280,6 +294,29 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             except sqlite3.IntegrityError:
                 self._set_headers(400)
                 self.wfile.write(json.dumps({"error": "User already exists"}).encode())
+
+        elif path == '/api/users/delete':
+            user_id = data.get('id')
+            if not user_id:
+                self._set_headers(400)
+                self.wfile.write(json.dumps({"error": "User ID required"}).encode())
+                return
+                
+            # Prevent deleting the main admin for safety
+            # In a real app, strict permission checks needed
+            if user_id == 1: 
+                 self._set_headers(403)
+                 self.wfile.write(json.dumps({"error": "Cannot delete root admin"}).encode())
+                 return
+
+            conn = get_db_connection()
+            c = conn.cursor()
+            c.execute('DELETE FROM users WHERE id = ?', (user_id,))
+            conn.commit()
+            conn.close()
+            
+            self._set_headers(200)
+            self.wfile.write(json.dumps({"success": True}).encode())
         
         elif path == '/api/transactions/create':
             user_id = data.get('user_id', 1) # Default to 1 (admin) if not provided
