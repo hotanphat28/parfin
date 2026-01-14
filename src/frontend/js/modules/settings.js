@@ -137,8 +137,27 @@ export const Settings = {
 
 	bindAdminEvents() {
 		const createUserForm = document.getElementById('create-user-form');
+		const showAddUserBtn = document.getElementById('show-add-user-btn');
+		const cancelAddUserBtn = document.getElementById('cancel-add-user-btn');
+		const addUserSection = document.getElementById('add-user-section');
+
 		if (createUserForm) {
 			createUserForm.addEventListener('submit', (e) => this.handleCreateUser(e));
+		}
+
+		if (showAddUserBtn && addUserSection) {
+			showAddUserBtn.addEventListener('click', () => {
+				addUserSection.classList.remove('hidden');
+				showAddUserBtn.classList.add('hidden');
+			});
+		}
+
+		if (cancelAddUserBtn && addUserSection) {
+			cancelAddUserBtn.addEventListener('click', () => {
+				addUserSection.classList.add('hidden');
+				if (showAddUserBtn) showAddUserBtn.classList.remove('hidden');
+				if (createUserForm) createUserForm.reset();
+			});
 		}
 	},
 
@@ -151,15 +170,37 @@ export const Settings = {
 
 			users.forEach(user => {
 				const tr = document.createElement('tr');
-				tr.className = 'border-b hover:bg-accent';
-				tr.style.borderColor = 'var(--bg-accent)';
+				tr.className = 'border-b hover:bg-accent transition-colors';
+				tr.style.borderBottom = '1px solid var(--bg-accent)';
+
+				// Initials for avatar
+				const initials = user.username.substring(0, 2).toUpperCase();
+				const avatarColor = user.role === 'admin' ? 'var(--primary)' : 'var(--secondary)';
+				const avatarTextColor = user.role === 'admin' ? 'var(--text-on-primary)' : '#fff';
 
 				tr.innerHTML = `
-					<td class="p-2">${user.id}</td>
-					<td class="p-2 font-bold">${user.username}</td>
-					<td class="p-2 badge ${user.role === 'admin' ? 'badge-primary' : 'badge-secondary'}" style="font-size: 0.75rem">${user.role}</td>
-					<td class="p-2 text-right">
-						${user.role !== 'admin' ? `<button class="btn-icon text-danger delete-user-btn" data-id="${user.id}">🗑️</button>` : ''}
+					<td class="py-4 pl-4 pr-8 align-middle">
+						<div class="flex items-center gap-4">
+							<div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm" style="background-color: ${avatarColor}; color: ${avatarTextColor}; flex-shrink: 0">
+								${initials}
+							</div>
+							<div class="flex flex-col">
+								<span class="font-bold text-sm">${user.username}</span>
+								<span class="text-xs text-secondary">ID: ${user.id}</span>
+							</div>
+						</div>
+					</td>
+					<td class="py-4 px-4 align-middle">
+						<span class="badge ${user.role === 'admin' ? 'badge-primary' : 'badge-secondary'} text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+							${user.role}
+						</span>
+					</td>
+					<td class="py-4 pl-8 pr-4 align-middle text-right">
+						${user.role !== 'admin' ? `
+							<button class="btn-icon text-danger hover:bg-red-100 transition-colors p-2 rounded-full delete-user-btn" data-id="${user.id}" title="Delete User">
+								🗑️
+							</button>
+						` : ''}
 					</td>
 				`;
 
@@ -172,6 +213,7 @@ export const Settings = {
 			});
 		} catch (e) {
 			console.error('Failed to load users', e);
+			showToast('Failed to load users', 'error');
 		}
 	},
 
@@ -181,11 +223,23 @@ export const Settings = {
 		const formData = new FormData(form);
 		const data = Object.fromEntries(formData.entries());
 
+		// Basic client-side validation
+		if (!data.username || !data.password) {
+			showToast('Please fill in all fields', 'error');
+			return;
+		}
+
 		try {
-			const response = await Api.createUser(data); // Reusing existing createUser in Api (it calls /api/users/create)
-			if (response.ok || response.success) { // Api.createUser return structure might vary, let's check
+			const response = await Api.createUser(data);
+			if (response.ok || response.success) {
 				showToast('User created successfully', 'success');
 				form.reset();
+				// Toggle visibility back
+				const addUserSection = document.getElementById('add-user-section');
+				const showAddUserBtn = document.getElementById('show-add-user-btn');
+				if (addUserSection) addUserSection.classList.add('hidden');
+				if (showAddUserBtn) showAddUserBtn.classList.remove('hidden');
+
 				this.loadUsers();
 			} else {
 				showToast(response.error || 'Failed to create user', 'error');
@@ -196,7 +250,43 @@ export const Settings = {
 	},
 
 	async handleDeleteUser(id) {
-		if (!confirm('Delete this user?')) return;
+		// Use custom confirmation modal
+		const modal = document.getElementById('confirmation-modal');
+		const title = document.getElementById('confirmation-title');
+		const msg = document.getElementById('confirmation-message');
+		const confirmBtn = document.getElementById('confirm-ok-btn');
+		const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+		if (!modal) {
+			// Fallback
+			if (!confirm('Delete this user?')) return;
+			this.performDeleteUser(id);
+			return;
+		}
+
+		// Setup Modal
+		title.textContent = 'Delete User';
+		msg.textContent = 'Are you sure you want to permanently delete this user? This action cannot be undone.';
+		modal.classList.remove('hidden');
+
+		// Cleanup old listeners
+		const newConfirmBtn = confirmBtn.cloneNode(true);
+		confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+		const newCancelBtn = cancelBtn.cloneNode(true);
+		cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+		newCancelBtn.addEventListener('click', () => {
+			modal.classList.add('hidden');
+		});
+
+		newConfirmBtn.addEventListener('click', async () => {
+			modal.classList.add('hidden');
+			await this.performDeleteUser(id);
+		});
+	},
+
+	async performDeleteUser(id) {
 		try {
 			const ok = await Api.deleteUser(id);
 			if (ok) {

@@ -1,70 +1,104 @@
-<h2 class="text-xl mb-4" data-i18n="nav_settings">Settings</h2>
-<div class="card" style="max-width: 400px">
-	<div class="input-group">
-		<label class="input-label" data-i18n="language_label">Language</label>
-		<select id="language-selector" class="input-field">
-			<option value="en">🇺🇸 English</option>
-			<option value="vi">🇻🇳 Tiếng Việt</option>
-		</select>
-	</div>
-	<div class="input-group">
-		<select id="theme-selector" class="input-field">
-			<option value="system" data-i18n="theme_system">🌓 System</option>
-			<option value="light" data-i18n="theme_light">☀️ Light</option>
-			<option value="dark" data-i18n="theme_dark">🌙 Dark</option>
-		</select>
-	</div>
-	<div class="input-group">
-		<label class="input-label" data-i18n="exchange_rate_label">Exchange Rate</label>
-		<input type="number" id="exchange-rate-input" class="input-field" placeholder="25000">
-		<p class="text-secondary text-xs mt-sm" data-i18n="exchange_rate_help">Set the
-			exchange rate.</p>
-	</div>
-	<button id="update-rate-btn" class="btn btn-primary w-full" data-i18n="update_rate_btn">Update Rate</button>
-</div>
+<div class="w-full">
+	<h2 class="text-xl mb-6 font-bold" data-i18n="nav_settings">Settings</h2>
 
-<!-- Admin Board (Hidden by default) -->
-<div id="admin-board" class="hidden mt-8 card">
-	<h2 class="text-xl mb-4 text-primary">Admin Board</h2>
+	<div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+		<!-- General Settings Column (Takes 4 cols on large screens) -->
+		<div class="card xl:col-span-4 w-full">
+			<h3 class="text-lg font-bold mb-6 border-b pb-4" style="border-color: var(--bg-accent)">General</h3>
 
-	<!-- User List -->
-	<div class="mb-4">
-		<h3 class="text-lg mb-2">User Management</h3>
-		<table class="w-full text-left text-sm">
-			<thead>
-				<tr class="text-secondary border-b" style="border-color: var(--bg-accent)">
-					<th class="p-2">ID</th>
-					<th class="p-2">Username</th>
-					<th class="p-2">Role</th>
-					<th class="p-2 text-right">Action</th>
-				</tr>
-			</thead>
-			<tbody id="user-list-body">
-				<!-- Users injected here -->
-			</tbody>
-		</table>
-	</div>
+			<div class="space-y-6">
+				<div class="input-group mb-0">
+					<label class="input-label font-medium mb-2" data-i18n="language_label">Language</label>
+					<select id="language-selector" class="input-field cursor-pointer max-w-sm">
+						<option value="en">🇺🇸 English</option>
+						<option value="vi">🇻🇳 Tiếng Việt</option>
+					</select>
+				</div>
 
-	<!-- Add User -->
-	<div class="border-t pt-4" style="border-color: var(--bg-accent)">
-		<h3 class="text-md mb-2">Create New User</h3>
-		<form id="create-user-form" class="flex gap-sm items-end">
-			<div class="input-group flex-1">
-				<label class="text-xs text-secondary">Username</label>
-				<input type="text" name="username" class="input-field" required>
+				<div class="input-group mb-0">
+					<label class="input-label font-medium mb-2">Theme</label>
+					<select id="theme-selector" class="input-field cursor-pointer max-w-sm">
+						<option value="system" data-i18n="theme_system">🌓 System</option>
+						<option value="light" data-i18n="theme_light">☀️ Light</option>
+						<option value="dark" data-i18n="theme_dark">🌙 Dark</option>
+					</select>
+				</div>
+
+				<div class="input-group mb-0">
+					<label class="input-label font-medium mb-2" data-i18n="exchange_rate_label">Exchange Rate</label>
+					<div class="flex gap-2 max-w-sm">
+						<input type="number" id="exchange-rate-input" class="input-field" placeholder="25000">
+						<button id="update-rate-btn" class="btn btn-primary" data-i18n="update_rate_btn">Update</button>
+					</div>
+					<p class="text-secondary text-xs mt-2" data-i18n="exchange_rate_help">1 USD = ? VND</p>
+				</div>
 			</div>
-			<div class="input-group flex-1">
-				<label class="text-xs text-secondary">Password</label>
-				<input type="password" name="password" class="input-field" required>
+		</div>
+
+		<!-- Admin Board Column (Takes 8 cols on large screens) -->
+		<div id="admin-board" class="hidden xl:col-span-8 w-full">
+			<div class="card h-full">
+				<div class="flex justify-between items-center mb-6 pb-2">
+					<div>
+						<h3 class="text-lg font-bold">User Management</h3>
+						<p class="text-xs text-secondary mt-1">Manage system users and their roles.</p>
+					</div>
+					<button id="show-add-user-btn"
+						class="btn btn-primary text-sm flex items-center gap-xs shadow-sm px-4 py-2">
+						<span class="mr-2 text-xl font-light">+</span> Add User
+					</button>
+				</div>
+
+				<!-- User List -->
+				<div class="overflow-x-auto">
+					<table class="w-full text-left border-collapse table-auto">
+						<thead>
+							<tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
+								<th class="py-4 pl-4 pr-8 font-semibold w-1/2">User</th>
+								<th class="py-4 px-4 font-semibold w-1/4">Role</th>
+								<th class="py-4 pl-8 pr-4 font-semibold text-right w-1/4">Actions</th>
+							</tr>
+						</thead>
+						<tbody id="user-list-body" class="text-sm">
+							<!-- Users injected here -->
+						</tbody>
+					</table>
+				</div>
+
+				<!-- Add User Form (Expandable) -->
+				<div id="add-user-section" class="hidden mt-8 pt-6 border-t" style="border-color: var(--bg-accent)">
+					<h4 class="text-md font-bold mb-6">Create New User</h4>
+
+					<form id="create-user-form">
+						<div class="space-y-4 mb-6 max-w-lg">
+							<div class="input-group mb-0">
+								<label class="input-label mb-2">Username</label>
+								<input type="text" name="username" class="input-field" required
+									placeholder="e.g. johndoe">
+							</div>
+
+							<div class="input-group mb-0">
+								<label class="input-label mb-2">Role</label>
+								<select name="role" class="input-field">
+									<option value="user">User</option>
+									<option value="admin">Admin</option>
+								</select>
+							</div>
+
+							<div class="input-group mb-0">
+								<label class="input-label mb-2">Password</label>
+								<input type="password" name="password" class="input-field" required
+									placeholder="••••••••">
+							</div>
+						</div>
+
+						<div class="flex justify-end gap-4">
+							<button type="button" id="cancel-add-user-btn" class="btn btn-secondary">Cancel</button>
+							<button type="submit" class="btn btn-primary px-8">Create User</button>
+						</div>
+					</form>
+				</div>
 			</div>
-			<div class="input-group" style="width: 100px">
-				<label class="text-xs text-secondary">Role</label>
-				<select name="role" class="input-field">
-					<option value="user">User</option>
-					<option value="admin">Admin</option>
-				</select>
-			</div>
-			<button type="submit" class="btn btn-success" style="height: 42px">Add</button>
-		</form>
+		</div>
 	</div>
 </div>
