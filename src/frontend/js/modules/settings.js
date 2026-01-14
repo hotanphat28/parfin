@@ -139,24 +139,31 @@ export const Settings = {
 		const createUserForm = document.getElementById('create-user-form');
 		const showAddUserBtn = document.getElementById('show-add-user-btn');
 		const cancelAddUserBtn = document.getElementById('cancel-add-user-btn');
-		const addUserSection = document.getElementById('add-user-section');
+		const addUserModal = document.getElementById('add-user-modal');
 
 		if (createUserForm) {
 			createUserForm.addEventListener('submit', (e) => this.handleCreateUser(e));
 		}
 
-		if (showAddUserBtn && addUserSection) {
+		if (showAddUserBtn && addUserModal) {
 			showAddUserBtn.addEventListener('click', () => {
-				addUserSection.classList.remove('hidden');
-				showAddUserBtn.classList.add('hidden');
+				addUserModal.classList.remove('hidden');
 			});
 		}
 
-		if (cancelAddUserBtn && addUserSection) {
+		if (cancelAddUserBtn && addUserModal) {
 			cancelAddUserBtn.addEventListener('click', () => {
-				addUserSection.classList.add('hidden');
-				if (showAddUserBtn) showAddUserBtn.classList.remove('hidden');
+				addUserModal.classList.add('hidden');
 				if (createUserForm) createUserForm.reset();
+			});
+		}
+
+		// Close on click outside
+		if (addUserModal) {
+			addUserModal.addEventListener('click', (e) => {
+				if (e.target === addUserModal) {
+					addUserModal.classList.add('hidden');
+				}
 			});
 		}
 	},
@@ -235,10 +242,8 @@ export const Settings = {
 				showToast('User created successfully', 'success');
 				form.reset();
 				// Toggle visibility back
-				const addUserSection = document.getElementById('add-user-section');
-				const showAddUserBtn = document.getElementById('show-add-user-btn');
-				if (addUserSection) addUserSection.classList.add('hidden');
-				if (showAddUserBtn) showAddUserBtn.classList.remove('hidden');
+				const addUserModal = document.getElementById('add-user-modal');
+				if (addUserModal) addUserModal.classList.add('hidden');
 
 				this.loadUsers();
 			} else {

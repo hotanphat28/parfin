@@ -26,7 +26,7 @@
 
 				<div class="input-group mb-0">
 					<label class="input-label font-medium mb-2" data-i18n="exchange_rate_label">Exchange Rate</label>
-					<div class="flex gap-2 max-w-sm">
+					<div class="flex flex-col gap-2 max-w-sm">
 						<input type="number" id="exchange-rate-input" class="input-field" placeholder="25000">
 						<button id="update-rate-btn" class="btn btn-primary" data-i18n="update_rate_btn">Update</button>
 					</div>
@@ -63,40 +63,6 @@
 							<!-- Users injected here -->
 						</tbody>
 					</table>
-				</div>
-
-				<!-- Add User Form (Expandable) -->
-				<div id="add-user-section" class="hidden mt-8 pt-6 border-t" style="border-color: var(--bg-accent)">
-					<h4 class="text-md font-bold mb-6">Create New User</h4>
-
-					<form id="create-user-form">
-						<div class="space-y-4 mb-6 max-w-lg">
-							<div class="input-group mb-0">
-								<label class="input-label mb-2">Username</label>
-								<input type="text" name="username" class="input-field" required
-									placeholder="e.g. johndoe">
-							</div>
-
-							<div class="input-group mb-0">
-								<label class="input-label mb-2">Role</label>
-								<select name="role" class="input-field">
-									<option value="user">User</option>
-									<option value="admin">Admin</option>
-								</select>
-							</div>
-
-							<div class="input-group mb-0">
-								<label class="input-label mb-2">Password</label>
-								<input type="password" name="password" class="input-field" required
-									placeholder="••••••••">
-							</div>
-						</div>
-
-						<div class="flex justify-end gap-4">
-							<button type="button" id="cancel-add-user-btn" class="btn btn-secondary">Cancel</button>
-							<button type="submit" class="btn btn-primary px-8">Create User</button>
-						</div>
-					</form>
 				</div>
 			</div>
 		</div>
