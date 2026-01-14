@@ -135,5 +135,30 @@ export const Api = {
 			body: JSON.stringify(data)
 		});
 		return { ok: response.ok, status: response.status, data: await response.json() };
+	},
+
+	// Admin / User Management
+	async getUsers() {
+		const response = await fetch('/api/users');
+		if (!response.ok) throw new Error('Failed to fetch users');
+		return await response.json();
+	},
+
+	async createUser(data) {
+		const response = await fetch('/api/users/create', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(data)
+		});
+		return { ok: response.ok, status: response.status, data: await response.json() };
+	},
+
+	async deleteUser(id) {
+		const response = await fetch('/api/users/delete', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ id })
+		});
+		return response.ok;
 	}
 };

@@ -22,3 +22,49 @@
 	</div>
 	<button id="update-rate-btn" class="btn btn-primary w-full" data-i18n="update_rate_btn">Update Rate</button>
 </div>
+
+<!-- Admin Board (Hidden by default) -->
+<div id="admin-board" class="hidden mt-8 card">
+	<h2 class="text-xl mb-4 text-primary">Admin Board</h2>
+
+	<!-- User List -->
+	<div class="mb-4">
+		<h3 class="text-lg mb-2">User Management</h3>
+		<table class="w-full text-left text-sm">
+			<thead>
+				<tr class="text-secondary border-b" style="border-color: var(--bg-accent)">
+					<th class="p-2">ID</th>
+					<th class="p-2">Username</th>
+					<th class="p-2">Role</th>
+					<th class="p-2 text-right">Action</th>
+				</tr>
+			</thead>
+			<tbody id="user-list-body">
+				<!-- Users injected here -->
+			</tbody>
+		</table>
+	</div>
+
+	<!-- Add User -->
+	<div class="border-t pt-4" style="border-color: var(--bg-accent)">
+		<h3 class="text-md mb-2">Create New User</h3>
+		<form id="create-user-form" class="flex gap-sm items-end">
+			<div class="input-group flex-1">
+				<label class="text-xs text-secondary">Username</label>
+				<input type="text" name="username" class="input-field" required>
+			</div>
+			<div class="input-group flex-1">
+				<label class="text-xs text-secondary">Password</label>
+				<input type="password" name="password" class="input-field" required>
+			</div>
+			<div class="input-group" style="width: 100px">
+				<label class="text-xs text-secondary">Role</label>
+				<select name="role" class="input-field">
+					<option value="user">User</option>
+					<option value="admin">Admin</option>
+				</select>
+			</div>
+			<button type="submit" class="btn btn-success" style="height: 42px">Add</button>
+		</form>
+	</div>
+</div>

@@ -24,6 +24,20 @@ export const Settings = {
 		if (rateInput && state.settings.exchange_rate_usd_vnd) {
 			rateInput.value = state.settings.exchange_rate_usd_vnd;
 		}
+
+		// Admin Check
+		const board = document.getElementById('admin-board');
+		if (state.currentUser && state.currentUser.role === 'admin') {
+			if (board) {
+				board.classList.remove('hidden');
+				this.loadUsers();
+				this.bindAdminEvents();
+			}
+		} else {
+			if (board) {
+				board.classList.add('hidden');
+			}
+		}
 	},
 
 	bindEvents() {
@@ -118,6 +132,81 @@ export const Settings = {
 			document.dispatchEvent(new Event('settings:updated'));
 		} catch (e) {
 			showToast(t('toast_error'), 'error');
+		}
+	},
+
+	bindAdminEvents() {
+		const createUserForm = document.getElementById('create-user-form');
+		if (createUserForm) {
+			createUserForm.addEventListener('submit', (e) => this.handleCreateUser(e));
+		}
+	},
+
+	async loadUsers() {
+		try {
+			const users = await Api.getUsers();
+			const tbody = document.getElementById('user-list-body');
+			if (!tbody) return;
+			tbody.innerHTML = '';
+
+			users.forEach(user => {
+				const tr = document.createElement('tr');
+				tr.className = 'border-b hover:bg-accent';
+				tr.style.borderColor = 'var(--bg-accent)';
+
+				tr.innerHTML = `
+					<td class="p-2">${user.id}</td>
+					<td class="p-2 font-bold">${user.username}</td>
+					<td class="p-2 badge ${user.role === 'admin' ? 'badge-primary' : 'badge-secondary'}" style="font-size: 0.75rem">${user.role}</td>
+					<td class="p-2 text-right">
+						${user.role !== 'admin' ? `<button class="btn-icon text-danger delete-user-btn" data-id="${user.id}">🗑️</button>` : ''}
+					</td>
+				`;
+
+				const delBtn = tr.querySelector('.delete-user-btn');
+				if (delBtn) {
+					delBtn.addEventListener('click', () => this.handleDeleteUser(user.id));
+				}
+
+				tbody.appendChild(tr);
+			});
+		} catch (e) {
+			console.error('Failed to load users', e);
+		}
+	},
+
+	async handleCreateUser(e) {
+		e.preventDefault();
+		const form = e.target;
+		const formData = new FormData(form);
+		const data = Object.fromEntries(formData.entries());
+
+		try {
+			const response = await Api.createUser(data); // Reusing existing createUser in Api (it calls /api/users/create)
+			if (response.ok || response.success) { // Api.createUser return structure might vary, let's check
+				showToast('User created successfully', 'success');
+				form.reset();
+				this.loadUsers();
+			} else {
+				showToast(response.error || 'Failed to create user', 'error');
+			}
+		} catch (e) {
+			showToast('Error creating user', 'error');
+		}
+	},
+
+	async handleDeleteUser(id) {
+		if (!confirm('Delete this user?')) return;
+		try {
+			const ok = await Api.deleteUser(id);
+			if (ok) {
+				showToast('User deleted', 'success');
+				this.loadUsers();
+			} else {
+				showToast('Failed to delete user', 'error');
+			}
+		} catch (e) {
+			showToast('Error deleting user', 'error');
 		}
 	}
 };
