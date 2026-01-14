@@ -1,5 +1,5 @@
 
-const translations = {
+export const translations = {
 	en: {
 		app_title: "ParFin",
 		app_subtitle: "Family Finance Management",
@@ -39,7 +39,12 @@ const translations = {
 		expense_chart: "Expense Chart",
 		recent_transactions: "Recent Transactions",
 		filter_month: "Month",
-		filter_all: "All",
+		filter_this_month: "This Month",
+		filter_last_month: "Last Month",
+		filter_this_year: "This Year",
+		filter_custom: "Custom",
+		filter_all_categories: "All Categories",
+		filter_all: "All Time",
 		table_date: "Date",
 		table_category: "Category",
 		table_description: "Description",
@@ -180,7 +185,11 @@ const translations = {
 		asset_type_stock: "Stock",
 		asset_type_bond: "Bond",
 		asset_type_crypto: "Crypto",
-		asset_type_fund: "Fund Certificate"
+		asset_type_fund: "Fund Certificate",
+		select_destination_category: "Select Destination Category",
+		destination_details_title: "To (Destination)",
+		fixed_item_desc_placeholder: "Description (e.g., Monthly Rent)",
+		total_amount_label: "Total Amount"
 	},
 	vi: {
 		app_title: "ParFin",
@@ -221,7 +230,12 @@ const translations = {
 		expense_chart: "Biểu đồ chi phí",
 		recent_transactions: "Giao dịch gần đây",
 		filter_month: "Tháng",
-		filter_all: "Tất cả",
+		filter_this_month: "Tháng này",
+		filter_last_month: "Tháng trước",
+		filter_this_year: "Năm nay",
+		filter_custom: "Tùy chỉnh",
+		filter_all_categories: "Tất cả danh mục",
+		filter_all: "Tất cả thời gian",
 		table_date: "Ngày",
 		table_category: "Danh mục",
 		table_description: "Mô tả",
@@ -362,6 +376,10 @@ const translations = {
 		asset_type_stock: "Cổ phiếu",
 		asset_type_bond: "Trái phiếu",
 		asset_type_crypto: "Tiền điện tử",
-		asset_type_fund: "Chứng chỉ quỹ"
+		asset_type_fund: "Chứng chỉ quỹ",
+		select_destination_category: "Chọn Danh mục Đích",
+		destination_details_title: "Đến (Đích)",
+		fixed_item_desc_placeholder: "Mô tả (ví dụ: Tiền thuê nhà)",
+		total_amount_label: "Tổng số tiền"
 	}
 };

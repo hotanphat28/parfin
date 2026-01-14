@@ -72,20 +72,28 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
              self.wfile.write(json.dumps({"status": "ok"}).encode())
         elif path == '/api/transactions':
              # Query params handling
-             # Mock: Fetch all for now, filter logic can be added to SQL later
+             query = query_params
              
-             # In a real app we would get user_id from session
-             # For this prototype we will fetch all or filtered by date if time permits
+             start_date = query.get('start_date', [None])[0]
+             end_date = query.get('end_date', [None])[0]
+             category = query.get('category', [None])[0]
+             trans_type = query.get('type', [None])[0]
              
-             month = query_params.get('month', [None])[0]
-             
-             sql = "SELECT * FROM transactions"
+             sql = "SELECT * FROM transactions WHERE 1=1"
              args = []
              
-             if month:
-                 # Filter by month prefix (YYYY-MM)
-                 sql += " WHERE date LIKE ?"
-                 args.append(f"{month}%")
+             if start_date:
+                 sql += " AND date >= ?"
+                 args.append(start_date)
+             if end_date:
+                 sql += " AND date <= ?"
+                 args.append(end_date)
+             if category and category != 'all':
+                 sql += " AND category = ?"
+                 args.append(category)
+             if trans_type and trans_type != 'all':
+                 sql += " AND type = ?"
+                 args.append(trans_type)
                  
              sql += " ORDER BY date DESC"
              rows = query_db(sql, args)
@@ -101,7 +109,6 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                      "description": row['description'],
                      "date": row['date'],
                      "currency": row['currency'],
-                     "source": row['source'],
                      "source": row['source'],
                      "destination": row['destination'] if 'destination' in row.keys() else None,
                      "destination_category": row['destination_category'] if 'destination_category' in row.keys() else None,
