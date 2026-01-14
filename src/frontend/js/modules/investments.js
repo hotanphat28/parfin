@@ -216,7 +216,7 @@ export const Investments = {
 			form.querySelector('input[name="quantity"]').value = 1;
 			// Update label? 
 			// Simplified: Dividend = Amount (Price) - Tax.
-			document.querySelector('#inv-price-group label').textContent = "Total Amount";
+			document.querySelector('#inv-price-group label').textContent = t('total_amount_label');
 		}
 
 		if (type !== 'dividend') {

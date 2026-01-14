@@ -3,23 +3,23 @@
   <h1>ParFin</h1>
 </div>
 
-ParFin is a finance management web application designed for couples. It helps track expenses, manage budgets, and maintain financial transparency, all with a focus on simplicity and ease of use.
+ParFin is a finance management web application designed for couples. It helps track expenses, manage budgets, investments or savings, and maintain financial transparency, all with a focus on simplicity and ease of use.
 
 ## Features
 
 - **Couple-Centric Design**: Tailored for managing shared finances.
 - **Multi-lingual Support**: Supports **English** (default) and **Vietnamese**, switchable via the UI.
-- **Fixed Items Management**: Manage recurring monthly items (e.g., Salary, Rent) and auto-generate transactions for Expenses, Incomes, and **Allocations**.
-- **Fund Allocation**: Organize finances into specific funds (Serving, Support, Investment, Together Budget).
-- **Investment Portfolio**: Track and manage **Stocks, Bonds, Crypto, and Fund Certificates** with real-time portfolio holdings and P/L tracking.
-- **Flexible Transactions**: Support for Expenses, Incomes, and **Allocations (Transfers)**.
-- **Smart Form Layouts**: Dynamic UI that adapts to the transaction type (e.g., side-by-side "From/To" layout for transfers).
+- **Fixed Items Management**: Manage recurring monthly items (e.g., Salary, Debt) and auto-generate transactions for Expenses, Incomes, and Allocations.
+- **Fund Management**: Organize finances into specific funds (Serving, Support, Investment, Together Budget).
+- **Investment Management**: Track and manage **Stocks, Bonds, Crypto, and Fund Certificates** with real-time portfolio holdings and P/L tracking.
+- **Transactions Management**: Support for Expenses, Incomes, and Allocations.
+- **Form Layouts**: Dynamic UI that adapts to the transaction type (e.g., side-by-side "From/To" layout for transfers).
 - **Exchange Rate Management**: Set custom exchange rates (USD/VND) for accurate currency conversion.
 - **Visual Analytics**: Interactive bar charts (via Chart.js) to visualize spending by category and payment method.
-- **Responsive UI**: Includes a **Collapsible Sidebar** for better space management on smaller screens.
+- **Responsive UI**: Includes a Collapsible Sidebar for better space management on smaller screens.
 - **Theme Support**: Includes Light, Dark, and System Auto-detection modes.
-- **Detailed Tracking**: Track transaction details including **Payment Method (Cash/Bank)**, category, fund usage, and description.
-- **Monthly Filtering**: Easily view and filter transactions by month.
+- **Detailed Tracking**: Track transaction details including Payment Method (Cash/Bank), category, fund usage, and description.
+- **Filtering**: Easily view and filter transactions by month, year, and fund.
 - **User Authentication**: Secure login and session management.
 - **Import/Export**: Easily import and export transactions in JSON or CSV format.
 - **Admin Management**: Admins can create and manage user accounts.
@@ -40,7 +40,7 @@ ParFin is a finance management web application designed for couples. It helps tr
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/yourusername/parfin.git
+    git clone https://github.com/hotanphat28/parfin.git
     cd parfin
     ```
 
@@ -69,7 +69,7 @@ ParFin is a finance management web application designed for couples. It helps tr
     - **Expense/Income**: Log standard transactions.
     - **Allocation**: Transfer funds between accounts (Source -> Destination) with a clear side-by-side UI.
 4.  **Fixed Items**: Define recurring monthly items (like Rent or Salary) and easily generate them for the current month.
-5.  **Settings**: Navigate to Settings to switch language, theme, or update the **Exchange Rate**.
+5.  **Settings**: Navigate to Settings to switch language, theme, or update the Exchange Rate.
 
 ## Data Management
 

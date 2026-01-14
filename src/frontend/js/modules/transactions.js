@@ -438,7 +438,7 @@ export const Transactions = {
 			const targetDest = form.dataset.targetDestCategory;
 			const current = targetDest !== undefined ? targetDest : destSelect.value;
 
-			destSelect.innerHTML = '<option value="" disabled selected>Select Destination Category</option>';
+			destSelect.innerHTML = `<option value="" disabled selected>${t('select_destination_category')}</option>`;
 			const destCats = ['Saving', 'Support', 'Investment', 'Together', 'Salary', 'Other'];
 			destCats.forEach(cat => {
 				const option = document.createElement('option');
@@ -515,7 +515,9 @@ export const Transactions = {
 		let together = { cash: 0, bank: 0 };
 
 		let monthlyIncome = 0;
+		let monthlyIncomeStats = { cash: 0, bank: 0 };
 		let monthlyExpense = 0;
+		let monthlyExpenseStats = { cash: 0, bank: 0 };
 
 		const getSource = (source) => source === 'bank' ? 'bank' : 'cash';
 
@@ -526,10 +528,12 @@ export const Transactions = {
 			// --- Monthly Stats ---
 			if (t.type === 'income') {
 				monthlyIncome += amount;
+				monthlyIncomeStats[source] += amount;
 			} else if (t.type === 'expense') {
 				const allocationCategories = ['Saving', 'Support', 'Investment', 'Together'];
 				if (!allocationCategories.includes(t.category)) {
 					monthlyExpense += amount;
+					monthlyExpenseStats[source] += amount;
 				}
 			}
 
@@ -609,18 +613,16 @@ export const Transactions = {
 
 		const totalAll = total.cash + total.bank + saving.cash + saving.bank + support.cash + support.bank + investment.cash + investment.bank + together.cash + together.bank;
 
-		updateText('total-balance', totalAll, 'VND'); // The Total Balance is usually in base currency, but let's follow legacy logic which converted everything to display currency? 
-		// Wait, legacy: this.elements.totalBalance.textContent = this.formatCurrency(total...);
-		// And formatCurrency converts IF from != to.
-		// My Logic above converted everything to targetCurrency (USD/VND) already.
-		// So I should pass targetCurrency as 'from' so formatCurrency doesn't convert AGAIN.
-
 		updateText('total-balance', totalAll, targetCurrency);
 		updateText('balance-cash', total.cash, targetCurrency);
 		updateText('balance-bank', total.bank, targetCurrency);
 
 		updateText('monthly-income', monthlyIncome, targetCurrency);
+		updateText('income-cash', monthlyIncomeStats.cash, targetCurrency);
+		updateText('income-bank', monthlyIncomeStats.bank, targetCurrency);
 		updateText('monthly-expense', monthlyExpense, targetCurrency);
+		updateText('expense-cash', monthlyExpenseStats.cash, targetCurrency);
+		updateText('expense-bank', monthlyExpenseStats.bank, targetCurrency);
 
 		updateText('total-saving', saving.cash + saving.bank, targetCurrency);
 		updateText('saving-cash', saving.cash, targetCurrency);

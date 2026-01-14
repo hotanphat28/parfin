@@ -72,7 +72,7 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
              self.wfile.write(json.dumps({"status": "ok"}).encode())
         elif path == '/api/transactions':
              # Query params handling
-             query = parse_qs(parsed_path.query)
+             query = query_params
              
              start_date = query.get('start_date', [None])[0]
              end_date = query.get('end_date', [None])[0]

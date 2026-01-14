@@ -185,7 +185,11 @@ export const translations = {
 		asset_type_stock: "Stock",
 		asset_type_bond: "Bond",
 		asset_type_crypto: "Crypto",
-		asset_type_fund: "Fund Certificate"
+		asset_type_fund: "Fund Certificate",
+		select_destination_category: "Select Destination Category",
+		destination_details_title: "To (Destination)",
+		fixed_item_desc_placeholder: "Description (e.g., Monthly Rent)",
+		total_amount_label: "Total Amount"
 	},
 	vi: {
 		app_title: "ParFin",
@@ -372,6 +376,10 @@ export const translations = {
 		asset_type_stock: "Cổ phiếu",
 		asset_type_bond: "Trái phiếu",
 		asset_type_crypto: "Tiền điện tử",
-		asset_type_fund: "Chứng chỉ quỹ"
+		asset_type_fund: "Chứng chỉ quỹ",
+		select_destination_category: "Chọn Danh mục Đích",
+		destination_details_title: "Đến (Đích)",
+		fixed_item_desc_placeholder: "Mô tả (ví dụ: Tiền thuê nhà)",
+		total_amount_label: "Tổng số tiền"
 	}
 };

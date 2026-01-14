@@ -1,39 +1,54 @@
 <!-- New Dashboard Overview Layout -->
 <div class="dashboard-overview">
-	<!-- Left Column: Hero Stats -->
+	<!-- Left Column: Primary Stats (Expense + Balance) -->
 	<div class="stats-hero">
+		<!-- 1. Expense (Top) -->
 		<div class="card stat-card hero-card">
-			<p class="text-secondary text-sm" data-i18n="total_together">Total Together
-				Budget
-			</p>
-			<h2 class="text-xxl text-success" id="total-together">0 ₫</h2>
+			<p class="text-secondary text-sm" data-i18n="monthly_expense">Expense (Month)</p>
+			<h2 class="text-xxl text-danger" id="monthly-expense">0 ₫</h2>
 			<div class="flex justify-between text-sm text-secondary mt-md">
-				<span>💵 <span id="together-cash">0</span></span>
-				<span>🏦 <span id="together-bank">0</span></span>
+				<span>💵 <span id="expense-cash">0</span></span>
+				<span>🏦 <span id="expense-bank">0</span></span>
 			</div>
 		</div>
+
+		<!-- 2. Total Balance (Bottom) - Merged with Income -->
 		<div class="card stat-card hero-card">
-			<p class="text-secondary text-sm" data-i18n="monthly_expense">Expense (Month)
-			</p>
-			<h2 class="text-xxl text-danger" id="monthly-expense">0 ₫</h2>
+			<!-- Section 1: Total Balance -->
+			<div style="margin-bottom: 1rem; border-bottom: 1px solid var(--bg-accent); padding-bottom: 0.5rem">
+				<p class="text-secondary text-sm" data-i18n="total_balance">Total Balance</p>
+				<h2 class="text-xxl text-success" id="total-balance">0 ₫</h2>
+				<div class="flex justify-between text-secondary text-sm mt-1">
+					<span>💵 <span id="balance-cash">0</span></span>
+					<span>🏦 <span id="balance-bank">0</span></span>
+				</div>
+			</div>
+
+			<!-- Section 2: Income -->
+			<div>
+				<p class="text-secondary text-sm" data-i18n="monthly_income">Income (Month)</p>
+				<h2 class="text-xxl text-success" id="monthly-income">0 ₫</h2>
+				<div class="flex justify-between text-secondary text-sm mt-1">
+					<span>💵 <span id="income-cash">0</span></span>
+					<span>🏦 <span id="income-bank">0</span></span>
+				</div>
+			</div>
 		</div>
 	</div>
 
 	<!-- Right Column: Secondary Stats Grid -->
 	<div class="stats-secondary">
+		<!-- 1. Total Together (Moved here, resized) -->
 		<div class="card stat-card">
-			<p class="text-secondary text-sm" data-i18n="total_balance">Total Balance</p>
-			<h2 class="text-xl text-success" id="total-balance">0 ₫</h2>
+			<p class="text-secondary text-sm" data-i18n="total_together">Total Together Budget</p>
+			<h2 class="text-xl text-success" id="total-together">0 ₫</h2>
 			<div class="flex justify-between text-xs text-secondary mt-sm">
-				<span>💵 <span id="balance-cash">0</span></span>
-				<span>🏦 <span id="balance-bank">0</span></span>
+				<span>💵 <span id="together-cash">0</span></span>
+				<span>🏦 <span id="together-bank">0</span></span>
 			</div>
 		</div>
-		<div class="card stat-card">
-			<p class="text-secondary text-sm" data-i18n="monthly_income">Income (Month)</p>
-			<h2 class="text-xl text-success" id="monthly-income">0 ₫</h2>
-		</div>
 
+		<!-- 2. Total Saving -->
 		<div class="card stat-card">
 			<p class="text-secondary text-sm" data-i18n="total_saving">Total Saving</p>
 			<h2 class="text-xl text-primary" id="total-saving">0 ₫</h2>
@@ -42,6 +57,8 @@
 				<span>🏦 <span id="saving-bank">0</span></span>
 			</div>
 		</div>
+
+		<!-- 3. Total Support -->
 		<div class="card stat-card">
 			<p class="text-secondary text-sm" data-i18n="total_support">Total Support</p>
 			<h2 class="text-xl text-warning" id="total-support">0 ₫</h2>
@@ -50,9 +67,10 @@
 				<span>🏦 <span id="support-bank">0</span></span>
 			</div>
 		</div>
+
+		<!-- 4. Total Investment -->
 		<div class="card stat-card">
-			<p class="text-secondary text-sm" data-i18n="total_investment">Total Investment
-			</p>
+			<p class="text-secondary text-sm" data-i18n="total_investment">Total Investment</p>
 			<h2 class="text-xl text-info" id="total-investment">0 ₫</h2>
 			<div class="flex justify-between text-xs text-secondary mt-sm">
 				<span>💵 <span id="investment-cash">0</span></span>
