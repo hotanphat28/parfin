@@ -46,20 +46,20 @@ export const Transactions = {
 			const isVisible = localStorage.getItem('parfin_chart_visible') !== 'false';
 			if (!isVisible) {
 				chartContainer.classList.add('hidden');
-				toggleBtn.textContent = '🔒';
+				toggleBtn.innerHTML = '<i class="fa-solid fa-lock"></i>';
 			} else {
-				toggleBtn.textContent = '👁️';
+				toggleBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
 			}
 
 			toggleBtn.addEventListener('click', () => {
 				const isHidden = chartContainer.classList.contains('hidden');
 				if (isHidden) {
 					chartContainer.classList.remove('hidden');
-					toggleBtn.textContent = '👁️';
+					toggleBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
 					this.updateChart();
 				} else {
 					chartContainer.classList.add('hidden');
-					toggleBtn.textContent = '🔒';
+					toggleBtn.innerHTML = '<i class="fa-solid fa-lock"></i>';
 				}
 				localStorage.setItem('parfin_chart_visible', !isHidden);
 			});
@@ -257,10 +257,10 @@ export const Transactions = {
 			const sortField = th.dataset.sort;
 			const icon = th.querySelector('.sort-icon');
 			if (sortField === field) {
-				icon.textContent = direction === 'asc' ? ' ↑' : ' ↓';
+				icon.innerHTML = direction === 'asc' ? ' <i class="fa-solid fa-sort-up"></i>' : ' <i class="fa-solid fa-sort-down"></i>';
 				th.classList.add('text-primary');
 			} else {
-				icon.textContent = '';
+				icon.innerHTML = '';
 				th.classList.remove('text-primary');
 			}
 		});
@@ -310,8 +310,8 @@ export const Transactions = {
                     </div>
                 </td>
                 <td class="p-4 text-right">
-                    <button class="btn-icon edit-btn" style="margin-right: 0.5rem">✏️</button>
-                    <button class="btn-icon delete-btn">🗑️</button>
+                    <button class="btn-icon edit-btn" style="margin-right: 0.5rem"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn-icon delete-btn"><i class="fa-solid fa-trash"></i></button>
                 </td>
             `;
 

@@ -205,7 +205,7 @@ export const Settings = {
 					<td class="py-4 pl-8 pr-4 align-middle text-right">
 						${user.role !== 'admin' ? `
 							<button class="btn-icon text-danger hover:bg-red-100 transition-colors p-2 rounded-full delete-user-btn" data-id="${user.id}" title="Delete User">
-								🗑️
+								<i class="fa-solid fa-trash"></i>
 							</button>
 						` : ''}
 					</td>

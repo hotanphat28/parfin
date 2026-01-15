@@ -97,7 +97,7 @@ export const FixedItems = {
                 <td class="p-4 text-right font-bold">${formatCurrency(item.amount, item.currency || 'VND')}</td>
                 <td class="p-4 capitalize">${item.type}</td>
                 <td class="p-4 text-right">
-                    <button class="btn-icon delete-btn">🗑️</button>
+                    <button class="btn-icon delete-btn"><i class="fa-solid fa-trash"></i></button>
                 </td>
              `;
 

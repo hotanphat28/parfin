@@ -21,6 +21,14 @@ body {
 	display: none !important;
 }
 
+.opacity-50 {
+	opacity: 0.5;
+}
+
+.cursor-not-allowed {
+	cursor: not-allowed;
+}
+
 .flex {
 	display: flex;
 }
@@ -134,11 +142,7 @@ body {
 	backdrop-filter: blur(10px);
 }
 
-.card:hover {
-	border-color: var(--card-border-hover);
-	box-shadow: var(--shadow-glow);
-	transition: all 0.3s ease;
-}
+/* .card:hover removed to reduce distraction */
 
 .btn {
 	display: inline-flex;

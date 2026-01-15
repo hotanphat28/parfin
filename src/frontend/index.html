@@ -10,6 +10,7 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
             rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <link rel="stylesheet" href="css/style.css">
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
@@ -52,7 +53,7 @@
                                 <span class="text-xl font-bold sidebar-text" data-i18n="app_name">ParFin</span>
                             </div>
                             <button id="sidebar-toggle" class="btn-icon">
-                                ☰
+                                <i class="fa-solid fa-bars"></i>
                             </button>
                         </div>
 
@@ -60,25 +61,25 @@
                             <ul class="nav-list">
                                 <li class="nav-item active" data-view="view-monthly">
                                     <a href="#" class="nav-link">
-                                        <span class="nav-icon">📅</span>
+                                        <span class="nav-icon"><i class="fa-solid fa-calendar-days"></i></span>
                                         <span class="nav-text" data-i18n="nav_monthly">Monthly</span>
                                     </a>
                                 </li>
                                 <li class="nav-item" data-view="view-saving">
                                     <a href="#" class="nav-link">
-                                        <span class="nav-icon">💰</span>
+                                        <span class="nav-icon"><i class="fa-solid fa-piggy-bank"></i></span>
                                         <span class="nav-text" data-i18n="nav_saving">Saving</span>
                                     </a>
                                 </li>
                                 <li class="nav-item" data-view="view-investment">
                                     <a href="#" class="nav-link">
-                                        <span class="nav-icon">📈</span>
+                                        <span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span>
                                         <span class="nav-text" data-i18n="nav_investment">Investment</span>
                                     </a>
                                 </li>
                                 <li class="nav-item" data-view="view-settings">
                                     <a href="#" class="nav-link">
-                                        <span class="nav-icon">⚙️</span>
+                                        <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
                                         <span class="nav-text" data-i18n="nav_settings">Settings</span>
                                     </a>
                                 </li>
@@ -89,7 +90,7 @@
                             <div class="user-profile flex items-center gap-sm mb-4">
                                 <div
                                     class="avatar-placeholder bg-secondary text-primary rounded-full w-8 h-8 flex items-center justify-center">
-                                    👤
+                                    <i class="fa-solid fa-user"></i>
                                 </div>
                                 <div class="user-info sidebar-text">
                                     <p class="text-sm font-medium" id="sidebar-user-name">User</p>
@@ -97,7 +98,7 @@
                             </div>
                             <button id="logout-btn"
                                 class="btn btn-secondary w-full flex items-center justify-center gap-sm">
-                                <span class="nav-icon">🚪</span>
+                                <span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span>
                                 <span class="nav-text" data-i18n="logout_btn">Logout</span>
                             </button>
                         </div>
