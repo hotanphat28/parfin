@@ -186,6 +186,9 @@ export const Settings = {
 				const avatarTextColor = user.role === 'admin' ? 'var(--text-on-primary)' : '#fff';
 
 				tr.innerHTML = `
+					<td class="py-4 pl-4 w-10 align-middle">
+						<input type="checkbox" class="accent-primary cursor-pointer w-4 h-4">
+					</td>
 					<td class="py-4 pl-4 pr-8 align-middle">
 						<div class="flex items-center gap-4">
 							<div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm" style="background-color: ${avatarColor}; color: ${avatarTextColor}; flex-shrink: 0">
@@ -198,11 +201,11 @@ export const Settings = {
 						</div>
 					</td>
 					<td class="py-4 px-4 align-middle">
-						<span class="badge ${user.role === 'admin' ? 'badge-primary' : 'badge-secondary'} text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+						<span class="badge ${user.role === 'admin' ? 'badge-primary' : 'badge-secondary'} bg-opacity-10 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
 							${user.role}
 						</span>
 					</td>
-					<td class="py-4 pl-8 pr-4 align-middle text-right">
+					<td class="py-4 pl-8 pr-4 align-middle">
 						${user.role !== 'admin' ? `
 							<button class="btn-icon text-danger hover:bg-red-100 transition-colors p-2 rounded-full delete-user-btn" data-id="${user.id}" title="Delete User">
 								<i class="fa-solid fa-trash"></i>

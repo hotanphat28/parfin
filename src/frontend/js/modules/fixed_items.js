@@ -131,14 +131,18 @@ export const FixedItems = {
 
 		if (type === 'allocation') {
 			sourceSection.classList.add('source-section');
+			sourceSection.classList.add('modal-section');
 			transferGrid.classList.remove('transfer-grid-default');
 			transferGrid.classList.add('transfer-grid');
 
 			sourceTitle.classList.remove('hidden');
 			sourceTitle.textContent = t('source_from_title');
+
 			destGroup.classList.remove('hidden');
+			destGroup.classList.add('modal-section');
 		} else {
 			sourceSection.classList.remove('source-section');
+			sourceSection.classList.remove('modal-section');
 			transferGrid.classList.add('transfer-grid-default');
 			transferGrid.classList.remove('transfer-grid');
 
@@ -149,6 +153,7 @@ export const FixedItems = {
 				sourceTitle.classList.remove('hidden');
 			}
 			destGroup.classList.add('hidden');
+			destGroup.classList.remove('modal-section');
 		}
 
 		// Categories

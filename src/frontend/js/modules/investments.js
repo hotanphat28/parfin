@@ -82,15 +82,25 @@ export const Investments = {
 			if (tx.type === 'sell' || tx.type === 'dividend') color = 'text-success'; // Money in
 
 			tr.innerHTML = `
+                <td class="p-4">
+                    <input type="checkbox" class="accent-primary cursor-pointer w-4 h-4">
+                </td>
                 <td class="p-4">${new Date(tx.date).toLocaleDateString()}</td>
-                <td class="p-4 capitalize">${tx.asset_type || 'stock'}</td>
+                <td class="p-4">
+                    <div class="flex items-center gap-sm">
+                         <span class="text-lg w-8 h-8 flex items-center justify-center rounded-full bg-secondary bg-opacity-50">💰</span>
+                         <span class="capitalize font-medium">${tx.asset_type || 'stock'}</span>
+                    </div>
+                </td>
                 <td class="p-4 font-bold">${tx.symbol}</td>
-                <td class="p-4 ${color}">${typeLabel}</td>
+                <td class="p-4">
+                    <span class="badge ${color === 'text-danger' ? 'badge-warning' : 'badge-success'} bg-opacity-10" style="font-size: 0.75rem;">${typeLabel}</span>
+                </td>
                 <td class="p-4 text-right">${tx.quantity}</td>
                 <td class="p-4 text-right">${formatCurrency(tx.price)}</td>
                 <td class="p-4 text-right font-bold">${formatCurrency(total)}</td>
-                <td class="p-4 text-right">
-                    <button class="btn-icon delete-btn" data-id="${tx.id}">🗑️</button>
+                <td class="p-4">
+                    <button class="btn-icon delete-btn text-secondary hover:text-danger" data-id="${tx.id}"><i class="fa-solid fa-trash"></i></button>
                 </td>
             `;
 
@@ -151,7 +161,15 @@ export const Investments = {
 			tr.style.borderColor = 'var(--bg-accent)';
 
 			tr.innerHTML = `
-                <td class="p-4 capitalize">${h.assetType}</td>
+                <td class="p-4">
+                    <input type="checkbox" class="accent-primary cursor-pointer w-4 h-4">
+                </td>
+                <td class="p-4">
+                    <div class="flex items-center gap-sm">
+                         <span class="text-lg w-8 h-8 flex items-center justify-center rounded-full bg-secondary bg-opacity-50">📈</span>
+                         <span class="capitalize font-medium">${h.assetType}</span>
+                    </div>
+                </td>
                 <td class="p-4 font-bold">${symbol}</td>
                 <td class="p-4 text-right">${h.quantity.toFixed(2)}</td>
                 <td class="p-4 text-right">${formatCurrency(avgPrice)}</td>

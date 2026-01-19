@@ -114,12 +114,31 @@ body {
 	font-size: 1.2rem;
 	padding: 0.25rem;
 	border-radius: var(--radius-sm);
-	transition: transform 0.2s;
+	transition: transform 0.2s, color 0.2s;
+	color: var(--text-secondary);
 }
 
 .btn-icon:hover {
 	transform: scale(1.1);
-	background-color: var(--bg-accent);
+	/* background-color: var(--bg-accent); removed */
+	color: var(--text-primary);
+}
+
+/* Ensure utility classes override the default icon color */
+.btn-icon.text-danger {
+	color: var(--text-danger);
+}
+
+.btn-icon.text-danger:hover {
+	color: #dc2626;
+}
+
+.btn-icon.text-success {
+	color: var(--text-success);
+}
+
+.btn-icon.text-success:hover {
+	color: #059669;
 }
 
 /* Layout */
@@ -161,12 +180,12 @@ body {
 .btn-primary {
 	background: var(--gradient-primary);
 	color: var(--text-on-primary);
-	box-shadow: var(--shadow-lg);
+	/* box-shadow: var(--shadow-lg); */
 }
 
 .btn-primary:hover {
 	transform: translateY(-1px);
-	box-shadow: var(--shadow-glow);
+	/* box-shadow: var(--shadow-glow); removed */
 }
 
 .btn-secondary {
@@ -493,8 +512,8 @@ body {
 
 .nav-link:hover,
 .nav-item.active .nav-link {
-	background: var(--bg-accent);
-	color: var(--text-accent);
+	background: var(--color-black);
+	color: var(--color-golden);
 }
 
 .nav-icon {
@@ -578,13 +597,72 @@ body {
 }
 
 /* Table Enhancements */
-#transaction-table thead tr {
+/* Table Enhancements */
+/* Table Enhancements */
+.styled-table {
+	border-collapse: separate;
+	border-spacing: 0 0.5rem;
+	/* Space between rows concept if we want, or just keep collapse */
+	border-collapse: collapse;
+	/* Sticking to collapse for now but with cleaner lines */
+}
+
+.styled-table thead tr {
+	background-color: var(--bg-primary);
+	/* Use primary bg or white */
+	border-bottom: 2px solid var(--bg-accent);
+}
+
+.styled-table thead th {
+	font-weight: 600;
+	text-transform: uppercase;
+	font-size: 0.75rem;
+	letter-spacing: 0.05em;
+	color: var(--text-secondary);
+	text-align: left;
+}
+
+.styled-table thead th.text-right {
+	text-align: right;
+}
+
+.styled-table tbody tr {
+	transition: background-color 0.2s;
+}
+
+.styled-table tbody tr:hover {
 	background-color: var(--bg-secondary);
 }
 
-/* Ensure nice contrast for headers especially in dark mode if generic bg-secondary isn't enough, 
-   We added border-bottom to header in HTML already.
-*/
+/* Table Rounded wrapper */
+.table-rounded {
+	border-radius: var(--radius-sm);
+	overflow: hidden;
+	border: 1px solid var(--bg-accent);
+	/* Optional: explicit border matching the theme */
+}
+
+/* Quick fix for light mode */
+.bg-opacity-50 {
+	background-color: rgba(0, 0, 0, 0.05);
+}
+
+.modal-section {
+	border: 1px solid var(--bg-accent);
+	border-radius: var(--radius-sm);
+	padding: 1rem;
+	/* background-color: var(--bg-secondary); Optional, keeps it subtle */
+}
+
+[data-theme="dark"] .bg-opacity-50 {
+	background-color: rgba(255, 255, 255, 0.05);
+}
+
+.bg-opacity-10 {
+	background-color: rgba(0, 0, 0, 0.05);
+	backdrop-filter: blur(2px);
+}
+
 
 .align-middle {
 	vertical-align: middle;
@@ -594,24 +672,39 @@ body {
 .btn-success {
 	background-color: var(--success);
 	color: white;
-	box-shadow: var(--shadow-sm);
+	/* box-shadow: var(--shadow-sm); */
 }
 
 .btn-success:hover {
 	filter: brightness(1.1);
-	box-shadow: var(--shadow-md);
+	/* box-shadow: var(--shadow-md); */
+}
+
+/* Investment Page Buttons Override */
+#btn-invest-buy {
+	background-color: #d1fae5;
+	/* Light Green */
+	color: #065f46;
+	/* Dark Green */
+}
+
+#btn-invest-sell {
+	background-color: #fee2e2;
+	/* Light Red */
+	color: #991b1b;
+	/* Dark Red */
 }
 
 .btn-danger {
 	background-color: var(--danger);
 	color: white;
-	box-shadow: var(--shadow-sm);
+	/* box-shadow: var(--shadow-sm); */
 }
 
 .btn-danger:hover {
 	background-color: #dc2626;
 	/* Darker red */
-	box-shadow: var(--shadow-md);
+	/* box-shadow: var(--shadow-md); */
 }
 
 /* Flex Alignment */

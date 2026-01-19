@@ -50,13 +50,16 @@
 				</div>
 
 				<!-- User List -->
-				<div class="overflow-x-auto">
-					<table class="w-full text-left border-collapse table-auto">
+				<div class="overflow-x-auto table-rounded">
+					<table class="w-full text-left border-collapse table-auto styled-table">
 						<thead>
 							<tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
-								<th class="py-4 pl-4 pr-8 font-semibold w-1/2">User</th>
+								<th class="py-4 pl-4 w-10">
+									<input type="checkbox" class="accent-primary cursor-pointer w-4 h-4">
+								</th>
+								<th class="py-4 pl-4 pr-8 font-semibold w-50">User</th>
 								<th class="py-4 px-4 font-semibold w-1/4">Role</th>
-								<th class="py-4 pl-8 pr-4 font-semibold text-right w-1/4">Actions</th>
+								<th class="py-4 pl-8 pr-4 font-semibold w-1/4">Actions</th>
 							</tr>
 						</thead>
 						<tbody id="user-list-body" class="text-sm">

@@ -293,25 +293,33 @@ export const Transactions = {
 				fundBadge = `<span class="badge badge-warning" style="margin-left: 0.5rem; font-size: 0.75rem;">➔ ${destCatName}</span>`;
 			}
 
+			const sourceClass = transaction.source === 'bank' ? 'badge-info' : 'badge-success';
+			// Badge-like appearance for Source
+			const sourceBadge = `<span class="badge ${sourceClass} bg-opacity-10" style="font-size: 0.75rem;">${sourceName}</span>`;
+
 			tr.innerHTML = `
-                <td class="p-4">${new Date(transaction.date).toLocaleDateString(locale)}</td>
+                <td class="p-4">
+                    <input type="checkbox" class="accent-primary cursor-pointer w-4 h-4">
+                </td>
+                <td class="p-4 font-medium">${new Date(transaction.date).toLocaleDateString(locale)}</td>
                 <td class="p-4">
                     <div class="flex items-center gap-sm">
-                        <span>${getCategoryIcon(transaction.category)}</span>
-                        <span>${categoryName}</span>
+                        <span class="text-lg w-8 h-8 flex items-center justify-center rounded-full bg-secondary bg-opacity-50">${getCategoryIcon(transaction.category)}</span>
+                        <span class="font-medium">${categoryName}</span>
                     </div>
                 </td>
                 <td class="p-4 text-secondary">${transaction.description || '-'}</td>
                 <td class="p-4 text-right font-bold ${colorClass}">${sign} ${formatCurrency(transaction.amount, transaction.currency)}</td>
-                <td class="p-4 text-secondary">
-                    <div class="flex items-center">
-                        <span class="text-xs">${sourceName}${destName}</span>
+                <td class="p-4">
+                    <div class="flex items-center gap-sm">
+                        ${sourceBadge}
+                        ${destName ? '<span class="text-xs text-secondary">' + destName + '</span>' : ''}
                         ${fundBadge}
                     </div>
                 </td>
-                <td class="p-4 text-right">
-                    <button class="btn-icon edit-btn" style="margin-right: 0.5rem"><i class="fa-solid fa-pen"></i></button>
-                    <button class="btn-icon delete-btn"><i class="fa-solid fa-trash"></i></button>
+                <td class="p-4">
+                    <button class="btn-icon edit-btn text-secondary hover:text-primary"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn-icon delete-btn text-secondary hover:text-danger"><i class="fa-solid fa-trash"></i></button>
                 </td>
             `;
 
@@ -396,13 +404,19 @@ export const Transactions = {
 
 		if (type === 'allocation') {
 			sourceSection.classList.add('source-section');
+			sourceSection.classList.add('modal-section'); // Add border
 			sourceTitle.classList.remove('hidden');
 			sourceTitle.textContent = t('source_from_title');
+
 			destGroup.classList.remove('hidden');
+			destGroup.classList.add('modal-section'); // Add border
 		} else {
 			sourceSection.classList.remove('source-section');
+			sourceSection.classList.remove('modal-section'); // Remove border
 			sourceTitle.textContent = t('source_details_title');
+
 			destGroup.classList.add('hidden');
+			destGroup.classList.remove('modal-section'); // Remove border
 		}
 
 		// Categories

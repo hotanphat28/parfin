@@ -35,22 +35,20 @@
 <!-- Portfolio Holdings -->
 <div class="card" style="margin-bottom: var(--space-md)">
 	<h3 class="text-lg mb-4" data-i18n="portfolio_holdings">Portfolio Holdings</h3>
-	<div class="transaction-list-container">
-		<table class="w-full text-left border-collapse" id="holdings-table">
+	<div class="transaction-list-container table-rounded">
+		<table class="w-full text-left border-collapse styled-table" id="holdings-table">
 			<thead>
 				<tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
+					<th class="p-4 w-10">
+						<input type="checkbox" class="accent-primary cursor-pointer w-4 h-4">
+					</th>
 					<th class="p-4 font-medium" data-i18n="asset_type_label">Asset Type</th>
 					<th class="p-4 font-medium" data-i18n="table_symbol">Symbol</th>
-					<th class="p-4 font-medium text-right" data-i18n="table_quantity">
-						Quantity</th>
-					<th class="p-4 font-medium text-right" data-i18n="table_avg_price">Avg
-						Price</th>
-					<th class="p-4 font-medium text-right" data-i18n="table_mkt_price">Mkt
-						Price</th>
-					<th class="p-4 font-medium text-right" data-i18n="table_total_value">
-						Total Value</th>
-					<th class="p-4 font-medium text-right" data-i18n="table_pl_percent">P/L
-						%</th>
+					<th class="p-4 font-medium text-right" data-i18n="table_quantity">Quantity</th>
+					<th class="p-4 font-medium text-right" data-i18n="table_avg_price">Avg Price</th>
+					<th class="p-4 font-medium text-right" data-i18n="table_mkt_price">Mkt Price</th>
+					<th class="p-4 font-medium text-right" data-i18n="table_total_value">Total Value</th>
+					<th class="p-4 font-medium text-right" data-i18n="table_pl_percent">P/L %</th>
 				</tr>
 			</thead>
 			<tbody id="holdings-list-body">
@@ -66,21 +64,21 @@
 <!-- Investment History -->
 <div class="card">
 	<h3 class="text-lg mb-4" data-i18n="transaction_history">Transaction History</h3>
-	<div class="transaction-list-container">
-		<table class="w-full text-left border-collapse" id="inv-history-table">
+	<div class="transaction-list-container table-rounded">
+		<table class="w-full text-left border-collapse styled-table" id="inv-history-table">
 			<thead>
 				<tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
+					<th class="p-4 w-10">
+						<input type="checkbox" class="accent-primary cursor-pointer w-4 h-4">
+					</th>
 					<th class="p-4 font-medium" data-i18n="table_date">Date</th>
 					<th class="p-4 font-medium" data-i18n="asset_type_label">Asset Type</th>
 					<th class="p-4 font-medium" data-i18n="table_symbol">Symbol</th>
 					<th class="p-4 font-medium" data-i18n="table_activity">Activity</th>
 					<th class="p-4 font-medium text-right" data-i18n="table_qty">Qty</th>
-					<th class="p-4 font-medium text-right" data-i18n="table_price">Price
-					</th>
-					<th class="p-4 font-medium text-right" data-i18n="table_total_amount">
-						Total</th>
-					<th class="p-4 font-medium text-right" data-i18n="table_action">Action
-					</th>
+					<th class="p-4 font-medium text-right" data-i18n="table_price">Price</th>
+					<th class="p-4 font-medium text-right" data-i18n="table_total_amount">Total</th>
+					<th class="p-4 font-medium" data-i18n="table_action">Action</th>
 				</tr>
 			</thead>
 			<tbody id="inv-history-body">

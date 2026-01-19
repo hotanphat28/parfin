@@ -120,22 +120,23 @@
 			</select>
 		</div>
 	</div>
-	<div class="transaction-list-container">
-		<table class="w-full text-left border-collapse" id="transaction-table">
+	<div class="transaction-list-container table-rounded">
+		<table class="w-full text-left border-collapse styled-table" id="transaction-table">
 			<thead>
 				<tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
-					<th class="p-4 font-medium cursor-pointer hover-accent" data-sort="date">
+					<th class="p-4 w-10">
+						<input type="checkbox" class="accent-primary cursor-pointer w-4 h-4">
+					</th>
+					<th class="p-4 font-medium cursor-pointer hover-accent" data-sort="date" style="min-width: 120px;">
 						<span data-i18n="table_date">Date</span> <span class="sort-icon"></span>
 					</th>
 					<th class="p-4 font-medium" data-i18n="table_category">Category</th>
-					<th class="p-4 font-medium" data-i18n="table_description">Description
-					</th>
+					<th class="p-4 font-medium" data-i18n="table_description">Description</th>
 					<th class="p-4 font-medium text-right cursor-pointer hover-accent" data-sort="amount">
 						<span data-i18n="table_amount">Amount</span> <span class="sort-icon"></span>
 					</th>
 					<th class="p-4 font-medium" data-i18n="table_source">Source</th>
-					<th class="p-4 font-medium text-right" data-i18n="table_action">Action
-					</th>
+					<th class="p-4 font-medium" data-i18n="table_action">Action</th>
 				</tr>
 			</thead>
 			<tbody id="transaction-list-body">
