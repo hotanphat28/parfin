@@ -114,10 +114,27 @@ export const Investments = {
 		if (!tbody) return;
 		tbody.innerHTML = '';
 
-		// Calculate holdings
+		// Calculate holdings and Net Cash Flow
 		const holdings = {}; // { Symbol: { quantity, totalCost, assetType } }
+		let netCashFlow = 0;
 
 		(state.investments || []).forEach(tx => {
+			// Cash Flow Calculation
+			let txTotal = 0;
+			if (tx.type === 'buy') {
+				txTotal = (tx.quantity * tx.price) + (tx.fee || 0);
+				netCashFlow -= txTotal; // Money leaving the fund
+			} else if (tx.type === 'sell') {
+				txTotal = (tx.quantity * tx.price) - (tx.fee || 0) - (tx.tax || 0);
+				netCashFlow += txTotal; // Money returning to the fund
+			} else if (tx.type === 'dividend') {
+				// Assumption: For dividend, 'price' is used as Total Amount, qty is usually 1
+				// Or Price * Qty is the Gross Amount
+				txTotal = (tx.price * tx.quantity) - (tx.tax || 0);
+				netCashFlow += txTotal; // Income to the fund
+			}
+
+			// Holdings Calculation
 			if (!holdings[tx.symbol]) {
 				holdings[tx.symbol] = { quantity: 0, totalCost: 0, assetType: tx.asset_type || 'stock' };
 			}
@@ -127,10 +144,7 @@ export const Investments = {
 				holdings[tx.symbol].totalCost += (tx.price * tx.quantity) + (tx.fee || 0);
 			} else if (tx.type === 'sell') {
 				// Determine Cost Basis (FIFO or Average). Let's use Average Cost for simplicity.
-				// If we sell, we reduce quantity. We also reduce Total Cost proportionally? 
-				// Or we separate Realized P/L? 
-				// For "Current Portfolio", we just care about remaining Qty and remaining Cost Basis.
-				const currentAvgCost = holdings[tx.symbol].totalCost / holdings[tx.symbol].quantity;
+				const currentAvgCost = holdings[tx.symbol].quantity > 0 ? holdings[tx.symbol].totalCost / holdings[tx.symbol].quantity : 0;
 				holdings[tx.symbol].quantity -= tx.quantity;
 				holdings[tx.symbol].totalCost -= (currentAvgCost * tx.quantity);
 			}
@@ -140,6 +154,8 @@ export const Investments = {
 
 		if (activeHoldings.length === 0) {
 			tbody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-secondary">${t('no_holdings')}</td></tr>`;
+			// Still update stats even if no holdings (Available Cash might still exist)
+			this.updateHeroStats(0, 0, netCashFlow);
 			return;
 		}
 
@@ -147,7 +163,7 @@ export const Investments = {
 		let totalCurrentValue = 0;
 
 		activeHoldings.forEach(([symbol, h]) => {
-			const avgPrice = h.totalCost / h.quantity;
+			const avgPrice = h.quantity > 0 ? h.totalCost / h.quantity : 0;
 			const mktPrice = avgPrice; // MOCK: Assume market price = avg price for now (no live data)
 			const totalValue = mktPrice * h.quantity;
 			const pl = 0;
@@ -181,14 +197,14 @@ export const Investments = {
 		});
 
 		// Update Hero Stats
-		this.updateHeroStats(totalInvested, totalCurrentValue);
+		this.updateHeroStats(totalInvested, totalCurrentValue, netCashFlow);
 	},
 
 	renderStats() {
 		// Updated in renderPortfolio for now
 	},
 
-	updateHeroStats(invested, current) {
+	updateHeroStats(invested, current, netCashFlow) {
 		document.getElementById('inv-total-invested').textContent = formatCurrency(invested);
 		document.getElementById('inv-current-value').textContent = formatCurrency(current);
 		const pl = current - invested;
@@ -197,6 +213,26 @@ export const Investments = {
 		const plEl = document.getElementById('inv-total-pl');
 		plEl.textContent = `${plPercent.toFixed(2)}%`;
 		plEl.className = pl >= 0 ? 'text-success' : 'text-danger';
+
+		// Calculate Available Cash
+		// Available = (Total Allocation to Investment Fund) + (Net Cash Flow from Inv Transactions)
+		// Note: Net Cash Flow is usually negative (outflow for buys), so we add it. A negative value reduces the balance.
+
+		let investmentBalance = 0;
+		if (state.balances && state.balances.investment) {
+			investmentBalance = (state.balances.investment.cash || 0) + (state.balances.investment.bank || 0);
+		}
+
+		console.log('Investment Balance (Allocated):', investmentBalance);
+		console.log('Net Investment Cash Flow:', netCashFlow);
+
+		const availableCash = investmentBalance + netCashFlow;
+		const availableEl = document.getElementById('inv-available-cash');
+
+		if (availableEl) {
+			availableEl.textContent = formatCurrency(availableCash);
+			availableEl.className = availableCash >= 0 ? 'text-success text-xl' : 'text-danger text-xl';
+		}
 	},
 
 	openModal(type) {

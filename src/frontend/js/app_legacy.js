@@ -1097,7 +1097,6 @@ const App = {
 					// We need to know if the destination payment method is cash or bank
 					// For allocations, the destination method is stored in t.destination
 					const destSource = getSource(t.destination);
-
 					if (t.destination_category === 'Saving') saving[destSource] += amount;
 					else if (t.destination_category === 'Support') support[destSource] += amount;
 					else if (t.destination_category === 'Investment') investment[destSource] += amount;
@@ -1108,22 +1107,15 @@ const App = {
 					// For now, let's assume Allocation IS for Funds.
 				}
 			}
-
 		});
 
-		// --- INVESTMENT LEDGER INTEGRATION ---
-		// Adjust Investment Fund Balance based on Stock Trading Activity
-		// Buy = Spend Cash (Decrease Investment Balance)
-		// Sell = Receive Cash (Increase Investment Balance)
-		// Dividend = Receive Cash (Increase Investment Balance)
-		// Note: We assume all trading happens via "Bank" for simplicity, or we can track it.
-		// For now, let's assume it impacts the investment 'Bank' balance mostly?
-		// Or we should split based on how we implemented the form? We didn't add Source to Investment Form.
-		// Let's assume it comes from "Investment Bank" by default? Or "Investment Cash"?
-		// Stocks are usually bought via Bank.
+		// --- Adjust Investment Balance for Trading Activity ---
+		// The 'investment' balance above currently represents TOTAL CAPITAL ALLOCATED.
+		// We need to reduce it by the amount currently "locked" in stocks to show AVAILABLE CASH.
+		// Logic: Available = Allocated + NetCashFlow (where NetCashFlow is usually negative for Buys)
 
-		const invActivity = { cash: 0, bank: 0 };
-		if (this.state.investments) {
+		let netInvestFlow = 0;
+		if (this.state.investments && Array.isArray(this.state.investments)) {
 			this.state.investments.forEach(inv => {
 				// Determine trading impact
 				let impact = 0;
