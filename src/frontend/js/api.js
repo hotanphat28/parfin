@@ -34,6 +34,22 @@ export const Api = {
 		return await response.json();
 	},
 
+	async getStats(params = {}) {
+		let url = '/api/stats';
+		const queryParams = [];
+		if (params.start_date) queryParams.push(`start_date=${params.start_date}`);
+		if (params.end_date) queryParams.push(`end_date=${params.end_date}`);
+		// currency defaults to VND in backend if omitted, or we can send it
+		if (params.currency) queryParams.push(`currency=${params.currency}`);
+
+		if (queryParams.length > 0) {
+			url += '?' + queryParams.join('&');
+		}
+		const response = await fetch(url);
+		if (!response.ok) throw new Error('Failed to fetch stats');
+		return await response.json();
+	},
+
 	async saveTransaction(data) {
 		const isEdit = !!data.id;
 		const url = isEdit ? '/api/transactions/update' : '/api/transactions/create';

@@ -28,8 +28,7 @@ export const Transactions = {
 			}
 		});
 		document.addEventListener('settings:updated', () => {
-			this.updateStats(); // Recalculate balances with new rate/currency
-			this.render();
+			this.fetchAndRender(); // Re-fetch stats with new currency/rate
 		});
 	},
 
@@ -181,64 +180,76 @@ export const Transactions = {
 	},
 
 	async fetchAndRender() {
-		await this.fetchTransactions();
-		this.render();
-		this.updateChart();
+		const params = this.computeParams();
+		// Add currency to params for Stats
+		const statsParams = { ...params, currency: state.currentLanguage === 'vi' ? 'VND' : 'USD' };
+
+		try {
+			const [transactions, stats] = await Promise.all([
+				Api.getTransactions(params),
+				Api.getStats(statsParams)
+			]);
+
+			state.transactions = transactions;
+			console.log('Stats received:', stats);
+
+			this.render();
+			this.renderStats(stats);
+		} catch (err) {
+			console.error('Error fetching data:', err);
+			const tbody = document.getElementById('transaction-list-body');
+			if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-danger text-center p-4">Error loading data.</td></tr>`;
+		}
+	},
+
+	computeParams() {
+		const params = { ...state.filterParams };
+		const period = params.period || 'this_month';
+		const today = new Date();
+
+		const formatDate = (date) => {
+			const offset = date.getTimezoneOffset();
+			const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+			return localDate.toISOString().split('T')[0];
+		};
+
+		if (period === 'this_month') {
+			const start = new Date(today.getFullYear(), today.getMonth(), 1);
+			const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+			params.start_date = formatDate(start);
+			params.end_date = formatDate(end);
+		} else if (period === 'last_month') {
+			const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+			const end = new Date(today.getFullYear(), today.getMonth(), 0);
+			params.start_date = formatDate(start);
+			params.end_date = formatDate(end);
+		} else if (period === 'this_year') {
+			const start = new Date(today.getFullYear(), 0, 1);
+			const end = new Date(today.getFullYear(), 11, 31);
+			params.start_date = formatDate(start);
+			params.end_date = formatDate(end);
+		} else if (period === 'last_year') {
+			const start = new Date(today.getFullYear() - 1, 0, 1);
+			const end = new Date(today.getFullYear() - 1, 11, 31);
+			params.start_date = formatDate(start);
+			params.end_date = formatDate(end);
+		} else if (period === 'custom') {
+			params.start_date = params.startDate;
+			params.end_date = params.endDate;
+		}
+
+		console.log('Computed API params:', params);
+		return params;
 	},
 
 	async fetchTransactions() {
-		console.log('Fetching transactions with params:', state.filterParams);
+		// Legacy support if called directly, though fetchAndRender is preferred
+		const params = this.computeParams();
 		try {
-			// Calculate Dates based on Period
-			const params = { ...state.filterParams };
-			const period = params.period || 'this_month';
-			const today = new Date();
-
-			const formatDate = (date) => {
-				const offset = date.getTimezoneOffset();
-				const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-				return localDate.toISOString().split('T')[0];
-			};
-
-			if (period === 'this_month') {
-				const start = new Date(today.getFullYear(), today.getMonth(), 1);
-				const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-				params.start_date = formatDate(start);
-				params.end_date = formatDate(end);
-			} else if (period === 'last_month') {
-				const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-				const end = new Date(today.getFullYear(), today.getMonth(), 0);
-				params.start_date = formatDate(start);
-				params.end_date = formatDate(end);
-			} else if (period === 'this_year') {
-				const start = new Date(today.getFullYear(), 0, 1);
-				const end = new Date(today.getFullYear(), 11, 31);
-				params.start_date = formatDate(start);
-				params.end_date = formatDate(end);
-			} else if (period === 'last_year') {
-				const start = new Date(today.getFullYear() - 1, 0, 1);
-				const end = new Date(today.getFullYear() - 1, 11, 31);
-				params.start_date = formatDate(start);
-				params.end_date = formatDate(end);
-			} else if (period === 'custom') {
-				params.start_date = params.startDate;
-				params.end_date = params.endDate;
-			}
-			// If 'all', no date params sent
-
-			console.log('Computed API params:', params);
-
 			const data = await Api.getTransactions(params);
 			state.transactions = data;
-
-			// Dispatch event for other modules (Stats, Charts)
-			document.dispatchEvent(new Event('transactions:updated'));
-			this.updateStats();
-		} catch (err) {
-			console.error(err);
-			const tbody = document.getElementById('transaction-list-body');
-			if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-danger text-center p-4">Error loading transactions.</td></tr>`;
-		}
+			this.render();
+		} catch (e) { console.error(e); }
 	},
 
 	render() {
@@ -540,177 +551,87 @@ export const Transactions = {
 		this.render();
 	},
 
-	updateStats() {
-		const transactions = state.transactions || [];
+	renderStats(stats) {
+		const { balances, period_stats, chart_data } = stats;
 
-		// Initialize balance objects
-		let total = { cash: 0, bank: 0 };
-		let saving = { cash: 0, bank: 0 };
-		let support = { cash: 0, bank: 0 };
-		let investment = { cash: 0, bank: 0 };
-		let together = { cash: 0, bank: 0 };
-
-		let monthlyIncome = 0;
-		let monthlyIncomeStats = { cash: 0, bank: 0 };
-		let monthlyExpense = 0;
-		let monthlyExpenseStats = { cash: 0, bank: 0 };
-
-		const getSource = (source) => source === 'bank' ? 'bank' : 'cash';
-
-		transactions.forEach(t => {
-			const source = getSource(t.source);
-			const amount = convertAmount(t.amount, t.currency || 'VND');
-
-			// --- Monthly Stats ---
-			if (t.type === 'income') {
-				monthlyIncome += amount;
-				monthlyIncomeStats[source] += amount;
-			} else if (t.type === 'expense') {
-				const allocationCategories = ['Saving', 'Support', 'Investment', 'Together'];
-				if (!allocationCategories.includes(t.category)) {
-					monthlyExpense += amount;
-					monthlyExpenseStats[source] += amount;
-				}
-			}
-
-			// --- Balance Logic ---
-			if (t.type === 'income') {
-				const fundCategories = ['Saving', 'Support', 'Investment', 'Together'];
-				if (fundCategories.includes(t.category)) {
-					if (t.category === 'Saving') saving[source] += amount;
-					else if (t.category === 'Support') support[source] += amount;
-					else if (t.category === 'Investment') investment[source] += amount;
-					else if (t.category === 'Together') together[source] += amount;
-				} else {
-					total[source] += amount;
-				}
-			} else if (t.type === 'expense') {
-				if (t.fund) {
-					const fundSource = source;
-					if (t.fund === 'Saving') saving[fundSource] -= amount;
-					else if (t.fund === 'Support') support[fundSource] -= amount;
-					else if (t.fund === 'Investment') investment[fundSource] -= amount;
-					else if (t.fund === 'Together') together[fundSource] -= amount;
-				} else {
-					total[source] -= amount;
-					// Legacy Allocation via Expense
-					if (t.category === 'Saving') saving[source] += amount;
-					else if (t.category === 'Support') support[source] += amount;
-					else if (t.category === 'Investment') investment[source] += amount;
-					else if (t.category === 'Together') together[source] += amount;
-				}
-			} else if (t.type === 'allocation') {
-				const sourceFundCat = ['Saving', 'Support', 'Investment', 'Together'];
-				if (sourceFundCat.includes(t.category)) {
-					if (t.category === 'Saving') saving[source] -= amount;
-					else if (t.category === 'Support') support[source] -= amount;
-					else if (t.category === 'Investment') investment[source] -= amount;
-					else if (t.category === 'Together') together[source] -= amount;
-				} else {
-					total[source] -= amount;
-				}
-
-				if (t.destination_category) {
-					const destSource = getSource(t.destination);
-					if (t.destination_category === 'Saving') saving[destSource] += amount;
-					else if (t.destination_category === 'Support') support[destSource] += amount;
-					else if (t.destination_category === 'Investment') investment[destSource] += amount;
-					else if (t.destination_category === 'Together') together[destSource] += amount;
-					else {
-						total[destSource] += amount;
-					}
-				}
-			}
-		});
-
-		// Investment Ledger Integration
-		const invActivity = { cash: 0, bank: 0 };
-		if (state.investments) {
-			state.investments.forEach(inv => {
-				const price = convertAmount(inv.price, 'VND');
-				const fee = convertAmount(inv.fee || 0, 'VND');
-				const tax = convertAmount(inv.tax || 0, 'VND');
-
-				let impact = 0;
-				if (inv.type === 'buy') impact = -1 * ((inv.quantity * price) + fee);
-				else if (inv.type === 'sell') impact = (inv.quantity * price) - fee - tax;
-				else if (inv.type === 'dividend') impact = (inv.quantity * price) - tax;
-
-				invActivity.bank += impact; // Assume bank
-			});
-		}
-		investment.bank += invActivity.bank;
-		investment.cash += invActivity.cash;
-
-		// Display Currency
 		const targetCurrency = state.currentLanguage === 'vi' ? 'VND' : 'USD';
+		// Helper to format
+		const fmt = (val) => formatCurrency(val, targetCurrency); // Backend already converted, but formatCurrency takes amount and fromCurrency. 
+		// Wait, formatCurrency signature is (amount, fromCurrency). It converts inside.
+		// BUT backend already returned values in 'targetCurrency' if we requested it.
+		// So we should NOT convert again.
+		// function formatCurrency(amount, fromCurrency = 'VND') { ... convertAmount ... }
+		// Issue: formatCurrency forces conversion.
+		// Fix: Pass targetCurrency as fromCurrency to formatCurrency so it skips conversion.
 
-		// Helper to update text content if element exists
-		const updateText = (id, val, currency = targetCurrency) => {
+		const updateText = (id, val) => {
 			const el = document.getElementById(id);
-			if (el) el.textContent = formatCurrency(val, currency);
+			if (el) el.textContent = fmt(val);
+		};
+		// Override helper to avoid double conversion
+		const fmtDirect = (val) => {
+			const locale = state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
+			return new Intl.NumberFormat(locale, { style: 'currency', currency: targetCurrency }).format(val);
+		};
+		const updateTextDirect = (id, val) => {
+			const el = document.getElementById(id);
+			if (el) el.textContent = fmtDirect(val);
 		};
 
-		const totalAll = total.cash + total.bank + saving.cash + saving.bank + support.cash + support.bank + investment.cash + investment.bank + together.cash + together.bank;
+		const totalAll = balances.total.cash + balances.total.bank +
+			balances.saving.cash + balances.saving.bank +
+			balances.support.cash + balances.support.bank +
+			balances.investment.cash + balances.investment.bank +
+			balances.together.cash + balances.together.bank;
 
-		updateText('total-balance', totalAll, targetCurrency);
-		updateText('balance-cash', total.cash, targetCurrency);
-		updateText('balance-bank', total.bank, targetCurrency);
+		updateTextDirect('total-balance', totalAll);
+		updateTextDirect('balance-cash', balances.total.cash);
+		updateTextDirect('balance-bank', balances.total.bank);
 
-		updateText('monthly-income', monthlyIncome, targetCurrency);
-		updateText('income-cash', monthlyIncomeStats.cash, targetCurrency);
-		updateText('income-bank', monthlyIncomeStats.bank, targetCurrency);
-		updateText('monthly-expense', monthlyExpense, targetCurrency);
-		updateText('expense-cash', monthlyExpenseStats.cash, targetCurrency);
-		updateText('expense-bank', monthlyExpenseStats.bank, targetCurrency);
+		// Period Stats
+		updateTextDirect('monthly-income', period_stats.income.total);
+		updateTextDirect('income-cash', period_stats.income.cash);
+		updateTextDirect('income-bank', period_stats.income.bank);
+		updateTextDirect('monthly-expense', period_stats.expense.total);
+		updateTextDirect('expense-cash', period_stats.expense.cash);
+		updateTextDirect('expense-bank', period_stats.expense.bank);
 
-		updateText('total-saving', saving.cash + saving.bank, targetCurrency);
-		updateText('saving-cash', saving.cash, targetCurrency);
-		updateText('saving-bank', saving.bank, targetCurrency);
+		// Funds
+		updateTextDirect('total-saving', balances.saving.cash + balances.saving.bank);
+		updateTextDirect('saving-cash', balances.saving.cash);
+		updateTextDirect('saving-bank', balances.saving.bank);
 
-		updateText('total-support', support.cash + support.bank, targetCurrency);
-		updateText('support-cash', support.cash, targetCurrency);
-		updateText('support-bank', support.bank, targetCurrency);
+		updateTextDirect('total-support', balances.support.cash + balances.support.bank);
+		updateTextDirect('support-cash', balances.support.cash);
+		updateTextDirect('support-bank', balances.support.bank);
 
-		updateText('total-investment', investment.cash + investment.bank, targetCurrency);
-		updateText('investment-cash', investment.cash, targetCurrency);
-		updateText('investment-bank', investment.bank, targetCurrency);
+		updateTextDirect('total-investment', balances.investment.cash + balances.investment.bank);
+		updateTextDirect('investment-cash', balances.investment.cash);
+		updateTextDirect('investment-bank', balances.investment.bank);
 
 		if (document.getElementById('inv-available-cash')) {
-			updateText('inv-available-cash', investment.cash + investment.bank, targetCurrency);
+			updateTextDirect('inv-available-cash', balances.investment.cash + balances.investment.bank);
 		}
 
-		updateText('total-together', together.cash + together.bank, targetCurrency);
-		updateText('together-cash', together.cash, targetCurrency);
-		updateText('together-bank', together.bank, targetCurrency);
+		updateTextDirect('total-together', balances.together.cash + balances.together.bank);
+		updateTextDirect('together-cash', balances.together.cash);
+		updateTextDirect('together-bank', balances.together.bank);
 
-		state.balances = { total, saving, support, investment, together };
+		state.balances = balances; // Store for other uses
+
+		this.renderChart(chart_data);
 	},
 
-	updateChart() {
+	renderChart(chartData) {
 		const ctx = document.getElementById('allocation-chart');
 		if (!ctx) return;
-
-		const expenses = (state.transactions || []).filter(t => t.type === 'expense');
-		const categoryData = {};
-
-		expenses.forEach(t => {
-			if (!categoryData[t.category]) categoryData[t.category] = { cash: 0, bank: 0 };
-			const source = t.source === 'bank' ? 'bank' : 'cash';
-			const amount = convertAmount(t.amount, t.currency || 'VND');
-			categoryData[t.category][source] += amount;
-		});
-
-		const labels = Object.keys(categoryData).map(cat => getCategoryName(cat));
-		const cashData = Object.values(categoryData).map(d => d.cash);
-		const bankData = Object.values(categoryData).map(d => d.bank);
 
 		if (state.chart) {
 			state.chart.destroy();
 		}
-
-		// Check if Chart is defined (global from script tag)
 		if (typeof Chart === 'undefined') return;
+
+		const labels = chartData.labels.map(cat => getCategoryName(cat));
 
 		state.chart = new Chart(ctx, {
 			type: 'bar',
@@ -719,12 +640,12 @@ export const Transactions = {
 				datasets: [
 					{
 						label: state.currentLanguage === 'vi' ? 'Tiền mặt' : 'Cash',
-						data: cashData,
+						data: chartData.datasets.cash,
 						backgroundColor: '#4BC0C0',
 					},
 					{
 						label: state.currentLanguage === 'vi' ? 'Ngân hàng' : 'Bank',
-						data: bankData,
+						data: chartData.datasets.bank,
 						backgroundColor: '#36A2EB',
 					}
 				]
@@ -741,7 +662,8 @@ export const Transactions = {
 								if (label) label += ': ';
 								if (context.parsed.y !== null) {
 									const targetCurrency = state.currentLanguage === 'vi' ? 'VND' : 'USD';
-									label += formatCurrency(context.parsed.y, targetCurrency);
+									const locale = state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
+									label += new Intl.NumberFormat(locale, { style: 'currency', currency: targetCurrency }).format(context.parsed.y);
 								}
 								return label;
 							}

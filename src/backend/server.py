@@ -8,6 +8,7 @@ from urllib.parse import urlparse, parse_qs
 from backend.db import init_db, query_db, get_db_connection
 import hashlib
 import uuid
+import backend.logic as logic
 
 # Helper to handle paths relative to the run.py
 PORT = 8000
@@ -131,6 +132,26 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                  })
              self._set_headers(200)
              self.wfile.write(json.dumps(users).encode())
+
+        elif path == '/api/stats':
+             # Query params
+             query = query_params
+             
+             start_date = query.get('start_date', [None])[0]
+             end_date = query.get('end_date', [None])[0]
+             currency = query.get('currency', ['VND'])[0] # Default to VND if not specified
+             
+             # Default user 1
+             user_id = 1
+             
+             try:
+                 stats = logic.calculate_stats(user_id, start_date, end_date, currency)
+                 self._set_headers(200)
+                 self.wfile.write(json.dumps(stats).encode())
+             except Exception as e:
+                 print(f"Stats error: {e}")
+                 self._set_headers(500)
+                 self.wfile.write(json.dumps({"error": str(e)}).encode())
              
         elif path == '/api/export':
              # Query params: month (YYYY-MM), format (json|csv)
