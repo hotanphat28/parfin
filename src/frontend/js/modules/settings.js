@@ -75,6 +75,8 @@ export const Settings = {
 			if (rateInput && settings.exchange_rate_usd_vnd) {
 				rateInput.value = settings.exchange_rate_usd_vnd;
 			}
+			// Notify app that settings are ready (fixes race condition with currency recalc)
+			document.dispatchEvent(new Event('settings:updated'));
 		} catch (e) {
 			console.error('Failed to load settings', e);
 		}

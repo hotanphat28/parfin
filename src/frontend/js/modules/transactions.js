@@ -27,7 +27,10 @@ export const Transactions = {
 				this.fetchAndRender();
 			}
 		});
-		document.addEventListener('settings:updated', () => this.render());
+		document.addEventListener('settings:updated', () => {
+			this.updateStats(); // Recalculate balances with new rate/currency
+			this.render();
+		});
 	},
 
 	onViewLoaded() {
@@ -51,6 +54,9 @@ export const Transactions = {
 				toggleBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
 			}
 
+			// Prevent duplicate binding
+			if (toggleBtn.dataset.bound) return;
+
 			toggleBtn.addEventListener('click', () => {
 				const isHidden = chartContainer.classList.contains('hidden');
 				if (isHidden) {
@@ -63,6 +69,7 @@ export const Transactions = {
 				}
 				localStorage.setItem('parfin_chart_visible', !isHidden);
 			});
+			toggleBtn.dataset.bound = "true";
 		}
 	},
 
@@ -88,9 +95,6 @@ export const Transactions = {
 	},
 
 	bindTableEvents() {
-		const tbody = document.getElementById('transaction-list-body');
-		if (!tbody) return;
-
 		// Filter Elements
 		const filterPeriod = document.getElementById('filter-period');
 		const filterCustomDates = document.getElementById('filter-custom-dates');
@@ -98,8 +102,21 @@ export const Transactions = {
 		const filterEndDate = document.getElementById('filter-end-date');
 		const filterCategory = document.getElementById('filter-category');
 
+		// Only bind if filterPeriod exists and hasn't been bound
+		if (filterPeriod && !filterPeriod.dataset.bound) {
+			filterPeriod.value = state.filterParams.period || 'this_month';
+			filterPeriod.addEventListener('change', (e) => {
+				console.log('Filter changed:', e.target.value);
+				const period = e.target.value;
+				state.filterParams.period = period;
+				this.updateFilterUI();
+				this.fetchAndRender();
+			});
+			filterPeriod.dataset.bound = "true";
+		}
+
 		// Populate Categories
-		if (filterCategory) {
+		if (filterCategory && !filterCategory.dataset.populated) {
 			const categories = ['Salary', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Debt', 'Personal', 'Saving', 'Support', 'Investment', 'Other'];
 			filterCategory.innerHTML = '<option value="all" data-i18n="filter_all_categories">All Categories</option>';
 			categories.forEach(cat => {
@@ -110,17 +127,13 @@ export const Transactions = {
 			});
 			// Restore value
 			if (state.filterParams.category) filterCategory.value = state.filterParams.category;
-		}
 
-		if (filterPeriod) {
-			filterPeriod.value = state.filterParams.period || 'this_month';
-			filterPeriod.addEventListener('change', (e) => {
-				console.log('Filter changed:', e.target.value);
-				const period = e.target.value;
-				state.filterParams.period = period;
-				this.updateFilterUI();
+			filterCategory.addEventListener('change', (e) => {
+				console.log('Category changed:', e.target.value);
+				state.filterParams.category = e.target.value;
 				this.fetchAndRender();
 			});
+			filterCategory.dataset.populated = "true";
 		}
 
 		const dateChangeHandler = () => {
@@ -130,15 +143,13 @@ export const Transactions = {
 			this.fetchAndRender();
 		};
 
-		if (filterStartDate) filterStartDate.addEventListener('change', dateChangeHandler);
-		if (filterEndDate) filterEndDate.addEventListener('change', dateChangeHandler);
-
-		if (filterCategory) {
-			filterCategory.addEventListener('change', (e) => {
-				console.log('Category changed:', e.target.value);
-				state.filterParams.category = e.target.value;
-				this.fetchAndRender();
-			});
+		if (filterStartDate && !filterStartDate.dataset.bound) {
+			filterStartDate.addEventListener('change', dateChangeHandler);
+			filterStartDate.dataset.bound = "true";
+		}
+		if (filterEndDate && !filterEndDate.dataset.bound) {
+			filterEndDate.addEventListener('change', dateChangeHandler);
+			filterEndDate.dataset.bound = "true";
 		}
 
 		// Initial UI State
@@ -146,15 +157,21 @@ export const Transactions = {
 
 		// Sorting
 		document.querySelectorAll('th[data-sort]').forEach(th => {
-			th.addEventListener('click', () => {
-				this.handleSort(th.dataset.sort);
-			});
+			if (!th.dataset.bound) {
+				th.addEventListener('click', () => {
+					this.handleSort(th.dataset.sort);
+				});
+				th.dataset.bound = "true";
+			}
 		});
 	},
 
 	updateFilterUI() {
 		const filterPeriod = document.getElementById('filter-period');
 		const filterCustomDates = document.getElementById('filter-custom-dates');
+
+		// Check if elements exist before trying to access classList
+		if (!filterCustomDates) return;
 
 		if (state.filterParams.period === 'custom') {
 			filterCustomDates.classList.remove('hidden');
@@ -164,6 +181,12 @@ export const Transactions = {
 	},
 
 	async fetchAndRender() {
+		await this.fetchTransactions();
+		this.render();
+		this.updateChart();
+	},
+
+	async fetchTransactions() {
 		console.log('Fetching transactions with params:', state.filterParams);
 		try {
 			// Calculate Dates based on Period
@@ -207,11 +230,10 @@ export const Transactions = {
 
 			const data = await Api.getTransactions(params);
 			state.transactions = data;
-			this.render();
+
 			// Dispatch event for other modules (Stats, Charts)
 			document.dispatchEvent(new Event('transactions:updated'));
 			this.updateStats();
-			this.updateChart();
 		} catch (err) {
 			console.error(err);
 			const tbody = document.getElementById('transaction-list-body');
@@ -605,10 +627,14 @@ export const Transactions = {
 		const invActivity = { cash: 0, bank: 0 };
 		if (state.investments) {
 			state.investments.forEach(inv => {
+				const price = convertAmount(inv.price, 'VND');
+				const fee = convertAmount(inv.fee || 0, 'VND');
+				const tax = convertAmount(inv.tax || 0, 'VND');
+
 				let impact = 0;
-				if (inv.type === 'buy') impact = -1 * ((inv.quantity * inv.price) + (inv.fee || 0));
-				else if (inv.type === 'sell') impact = (inv.quantity * inv.price) - (inv.fee || 0) - (inv.tax || 0);
-				else if (inv.type === 'dividend') impact = (inv.quantity * inv.price) - (inv.tax || 0);
+				if (inv.type === 'buy') impact = -1 * ((inv.quantity * price) + fee);
+				else if (inv.type === 'sell') impact = (inv.quantity * price) - fee - tax;
+				else if (inv.type === 'dividend') impact = (inv.quantity * price) - tax;
 
 				invActivity.bank += impact; // Assume bank
 			});

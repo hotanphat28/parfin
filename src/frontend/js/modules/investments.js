@@ -1,7 +1,8 @@
 
 import { Api } from '../api.js';
 import { state } from '../state.js';
-import { t, formatCurrency, showToast } from '../utils.js';
+import { t, formatCurrency, showToast, convertAmount } from '../utils.js';
+import { Transactions } from './transactions.js';
 
 export const Investments = {
 	init() {
@@ -39,6 +40,12 @@ export const Investments = {
 
 	async fetchAndRender() {
 		try {
+			// Ensure we have transaction stats for Available Cash
+			if (!state.balances || !state.transactions) {
+				console.log('Investments: Fetching transactions for balance calculation...');
+				await Transactions.fetchTransactions();
+			}
+
 			const data = await Api.getInvestments();
 			state.investments = data;
 			this.render();
@@ -67,14 +74,21 @@ export const Investments = {
 		// Sort by date desc (Api supposedly does this, but being safe)
 		transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+		const currentCurrency = state.currentLanguage === 'vi' ? 'VND' : 'USD';
+
 		transactions.forEach(tx => {
 			const tr = document.createElement('tr');
 			tr.className = 'border-b text-sm hovering-row';
 			tr.style.borderColor = 'var(--bg-accent)';
 
+			// Convert values
+			const price = convertAmount(tx.price, 'VND');
+			const fee = convertAmount(tx.fee || 0, 'VND');
+			const tax = convertAmount(tx.tax || 0, 'VND');
+
 			const total = (tx.type === 'buy')
-				? (tx.price * tx.quantity) + (tx.fee || 0) + (tx.tax || 0)
-				: (tx.price * tx.quantity) - (tx.fee || 0) - (tx.tax || 0); // Sell revenue net
+				? (price * tx.quantity) + fee + tax
+				: (price * tx.quantity) - fee - tax; // Sell revenue net
 
 			let typeLabel = tx.type.toUpperCase();
 			let color = 'text-primary';
@@ -97,8 +111,8 @@ export const Investments = {
                     <span class="badge ${color === 'text-danger' ? 'badge-warning' : 'badge-success'} bg-opacity-10" style="font-size: 0.75rem;">${typeLabel}</span>
                 </td>
                 <td class="p-4 text-right">${tx.quantity}</td>
-                <td class="p-4 text-right">${formatCurrency(tx.price)}</td>
-                <td class="p-4 text-right font-bold">${formatCurrency(total)}</td>
+                <td class="p-4 text-right">${formatCurrency(price, currentCurrency)}</td>
+                <td class="p-4 text-right font-bold">${formatCurrency(total, currentCurrency)}</td>
                 <td class="p-4">
                     <button class="btn-icon delete-btn text-secondary hover:text-danger" data-id="${tx.id}"><i class="fa-solid fa-trash"></i></button>
                 </td>
@@ -118,19 +132,26 @@ export const Investments = {
 		const holdings = {}; // { Symbol: { quantity, totalCost, assetType } }
 		let netCashFlow = 0;
 
+		const currentCurrency = state.currentLanguage === 'vi' ? 'VND' : 'USD';
+
 		(state.investments || []).forEach(tx => {
+			// Convert values for calculation
+			const price = convertAmount(tx.price, 'VND');
+			const fee = convertAmount(tx.fee || 0, 'VND');
+			const tax = convertAmount(tx.tax || 0, 'VND');
+
 			// Cash Flow Calculation
 			let txTotal = 0;
 			if (tx.type === 'buy') {
-				txTotal = (tx.quantity * tx.price) + (tx.fee || 0);
+				txTotal = (tx.quantity * price) + fee;
 				netCashFlow -= txTotal; // Money leaving the fund
 			} else if (tx.type === 'sell') {
-				txTotal = (tx.quantity * tx.price) - (tx.fee || 0) - (tx.tax || 0);
+				txTotal = (tx.quantity * price) - fee - tax;
 				netCashFlow += txTotal; // Money returning to the fund
 			} else if (tx.type === 'dividend') {
 				// Assumption: For dividend, 'price' is used as Total Amount, qty is usually 1
 				// Or Price * Qty is the Gross Amount
-				txTotal = (tx.price * tx.quantity) - (tx.tax || 0);
+				txTotal = (price * tx.quantity) - tax;
 				netCashFlow += txTotal; // Income to the fund
 			}
 
@@ -141,7 +162,7 @@ export const Investments = {
 
 			if (tx.type === 'buy') {
 				holdings[tx.symbol].quantity += tx.quantity;
-				holdings[tx.symbol].totalCost += (tx.price * tx.quantity) + (tx.fee || 0);
+				holdings[tx.symbol].totalCost += (price * tx.quantity) + fee;
 			} else if (tx.type === 'sell') {
 				// Determine Cost Basis (FIFO or Average). Let's use Average Cost for simplicity.
 				const currentAvgCost = holdings[tx.symbol].quantity > 0 ? holdings[tx.symbol].totalCost / holdings[tx.symbol].quantity : 0;
@@ -188,9 +209,9 @@ export const Investments = {
                 </td>
                 <td class="p-4 font-bold">${symbol}</td>
                 <td class="p-4 text-right">${h.quantity.toFixed(2)}</td>
-                <td class="p-4 text-right">${formatCurrency(avgPrice)}</td>
-                <td class="p-4 text-right">${formatCurrency(mktPrice)}</td>
-                <td class="p-4 text-right font-bold">${formatCurrency(totalValue)}</td>
+                <td class="p-4 text-right">${formatCurrency(avgPrice, currentCurrency)}</td>
+                <td class="p-4 text-right">${formatCurrency(mktPrice, currentCurrency)}</td>
+                <td class="p-4 text-right font-bold">${formatCurrency(totalValue, currentCurrency)}</td>
                 <td class="p-4 text-right ${pl >= 0 ? 'text-success' : 'text-danger'}">${plPercent.toFixed(2)}%</td>
              `;
 			tbody.appendChild(tr);
@@ -205,8 +226,9 @@ export const Investments = {
 	},
 
 	updateHeroStats(invested, current, netCashFlow) {
-		document.getElementById('inv-total-invested').textContent = formatCurrency(invested);
-		document.getElementById('inv-current-value').textContent = formatCurrency(current);
+		const currentCurrency = state.currentLanguage === 'vi' ? 'VND' : 'USD';
+		document.getElementById('inv-total-invested').textContent = formatCurrency(invested, currentCurrency);
+		document.getElementById('inv-current-value').textContent = formatCurrency(current, currentCurrency);
 		const pl = current - invested;
 		const plPercent = invested > 0 ? (pl / invested) * 100 : 0;
 
@@ -215,22 +237,19 @@ export const Investments = {
 		plEl.className = pl >= 0 ? 'text-success' : 'text-danger';
 
 		// Calculate Available Cash
-		// Available = (Total Allocation to Investment Fund) + (Net Cash Flow from Inv Transactions)
-		// Note: Net Cash Flow is usually negative (outflow for buys), so we add it. A negative value reduces the balance.
-
+		// state.balances.investment already includes the net cash flow (via transactions.js)
 		let investmentBalance = 0;
 		if (state.balances && state.balances.investment) {
 			investmentBalance = (state.balances.investment.cash || 0) + (state.balances.investment.bank || 0);
 		}
 
-		console.log('Investment Balance (Allocated):', investmentBalance);
-		console.log('Net Investment Cash Flow:', netCashFlow);
+		console.log('Investment Balance (Available):', investmentBalance);
 
-		const availableCash = investmentBalance + netCashFlow;
+		const availableCash = investmentBalance;
 		const availableEl = document.getElementById('inv-available-cash');
 
 		if (availableEl) {
-			availableEl.textContent = formatCurrency(availableCash);
+			availableEl.textContent = formatCurrency(availableCash, currentCurrency);
 			availableEl.className = availableCash >= 0 ? 'text-success text-xl' : 'text-danger text-xl';
 		}
 	},
