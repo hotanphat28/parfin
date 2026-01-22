@@ -7,12 +7,9 @@ import { Transactions } from './transactions.js';
 export const Investments = {
 	init() {
 		console.log('Investments module initialized');
-		// This is called when View is loaded. 
-		// We need to fetch data and bind events.
-
 		this.bindEvents();
 		this.fetchAndRender();
-		document.addEventListener('settings:updated', () => this.render());
+		document.addEventListener('settings:updated', () => this.fetchAndRender());
 	},
 
 	bindEvents() {
@@ -33,21 +30,26 @@ export const Investments = {
 		if (form) {
 			form.addEventListener('submit', (e) => this.handleSubmit(e));
 		}
-
-		// Dynamically show tax field if type is sell
-		// We handle this in openModal
 	},
 
 	async fetchAndRender() {
 		try {
-			// Ensure we have transaction stats for Available Cash
-			if (!state.balances || !state.transactions) {
-				console.log('Investments: Fetching transactions for balance calculation...');
-				await Transactions.fetchTransactions();
+			// Ensure we have transaction stats for Available Cash (which comes from general balances)
+			// Although now Logic calculates it, but we might rely on global state.balances
+			if (!state.balances) {
+				await Transactions.fetchAndRender(); // This fills state.balances
 			}
 
-			const data = await Api.getInvestments();
-			state.investments = data;
+			const currency = state.currentLanguage === 'vi' ? 'VND' : 'USD';
+
+			const [history, portfolio] = await Promise.all([
+				Api.getInvestments(),
+				Api.getInvestmentPortfolio({ currency })
+			]);
+
+			state.investments = history; // Transaction History
+			state.portfolio = portfolio; // Holdings & Summary logic from backend
+
 			this.render();
 		} catch (e) {
 			console.error('Failed to fetch investments', e);
@@ -57,7 +59,6 @@ export const Investments = {
 	render() {
 		this.renderHistory();
 		this.renderPortfolio();
-		this.renderStats();
 	},
 
 	renderHistory() {
@@ -71,9 +72,7 @@ export const Investments = {
 			return;
 		}
 
-		// Sort by date desc (Api supposedly does this, but being safe)
-		transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-
+		// Data already sorted by backend
 		const currentCurrency = state.currentLanguage === 'vi' ? 'VND' : 'USD';
 
 		transactions.forEach(tx => {
@@ -81,19 +80,27 @@ export const Investments = {
 			tr.className = 'border-b text-sm hovering-row';
 			tr.style.borderColor = 'var(--bg-accent)';
 
-			// Convert values
+			// History list items are pure transaction records. 
+			// Backend sends them as is. Backend 'price' is in stored currency? 
+			// No, Logic.py 'calculate_stats' converts them. But 'api/investments' just returns raw rows currently?
+			// Let's check server.py: 'SELECT * ...'. It returns raw rows.
+			// So we MUST convert them for display if they are not in target currency.
+			// Assumption: Investment Transactions stored in base currency or handling needs to be robust. 
+			// Current plan: Use client-side convertAmount for HISTORY LIST display consistency with existing UI, 
+			// BUT Portfolio table uses backend values.
+
 			const price = convertAmount(tx.price, 'VND');
 			const fee = convertAmount(tx.fee || 0, 'VND');
 			const tax = convertAmount(tx.tax || 0, 'VND');
 
 			const total = (tx.type === 'buy')
 				? (price * tx.quantity) + fee + tax
-				: (price * tx.quantity) - fee - tax; // Sell revenue net
+				: (price * tx.quantity) - fee - tax;
 
 			let typeLabel = tx.type.toUpperCase();
 			let color = 'text-primary';
-			if (tx.type === 'buy') color = 'text-danger'; // Money out
-			if (tx.type === 'sell' || tx.type === 'dividend') color = 'text-success'; // Money in
+			if (tx.type === 'buy') color = 'text-danger';
+			if (tx.type === 'sell' || tx.type === 'dividend') color = 'text-success';
 
 			tr.innerHTML = `
                 <td class="p-4">
@@ -128,74 +135,28 @@ export const Investments = {
 		if (!tbody) return;
 		tbody.innerHTML = '';
 
-		// Calculate holdings and Net Cash Flow
-		const holdings = {}; // { Symbol: { quantity, totalCost, assetType } }
-		let netCashFlow = 0;
-
+		// Use Backend Portfolio Data
+		const portfolio = state.portfolio || { holdings: [], summary: {} };
+		const activeHoldings = portfolio.holdings;
+		const summary = portfolio.summary;
 		const currentCurrency = state.currentLanguage === 'vi' ? 'VND' : 'USD';
 
-		(state.investments || []).forEach(tx => {
-			// Convert values for calculation
-			const price = convertAmount(tx.price, 'VND');
-			const fee = convertAmount(tx.fee || 0, 'VND');
-			const tax = convertAmount(tx.tax || 0, 'VND');
-
-			// Cash Flow Calculation
-			let txTotal = 0;
-			if (tx.type === 'buy') {
-				txTotal = (tx.quantity * price) + fee;
-				netCashFlow -= txTotal; // Money leaving the fund
-			} else if (tx.type === 'sell') {
-				txTotal = (tx.quantity * price) - fee - tax;
-				netCashFlow += txTotal; // Money returning to the fund
-			} else if (tx.type === 'dividend') {
-				// Assumption: For dividend, 'price' is used as Total Amount, qty is usually 1
-				// Or Price * Qty is the Gross Amount
-				txTotal = (price * tx.quantity) - tax;
-				netCashFlow += txTotal; // Income to the fund
-			}
-
-			// Holdings Calculation
-			if (!holdings[tx.symbol]) {
-				holdings[tx.symbol] = { quantity: 0, totalCost: 0, assetType: tx.asset_type || 'stock' };
-			}
-
-			if (tx.type === 'buy') {
-				holdings[tx.symbol].quantity += tx.quantity;
-				holdings[tx.symbol].totalCost += (price * tx.quantity) + fee;
-			} else if (tx.type === 'sell') {
-				// Determine Cost Basis (FIFO or Average). Let's use Average Cost for simplicity.
-				const currentAvgCost = holdings[tx.symbol].quantity > 0 ? holdings[tx.symbol].totalCost / holdings[tx.symbol].quantity : 0;
-				holdings[tx.symbol].quantity -= tx.quantity;
-				holdings[tx.symbol].totalCost -= (currentAvgCost * tx.quantity);
-			}
-		});
-
-		const activeHoldings = Object.entries(holdings).filter(([_, h]) => h.quantity > 0.0001);
-
-		if (activeHoldings.length === 0) {
+		if (!activeHoldings || activeHoldings.length === 0) {
 			tbody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-secondary">${t('no_holdings')}</td></tr>`;
-			// Still update stats even if no holdings (Available Cash might still exist)
-			this.updateHeroStats(0, 0, netCashFlow);
+			this.updateHeroStats(summary);
 			return;
 		}
 
-		let totalInvested = 0;
-		let totalCurrentValue = 0;
-
-		activeHoldings.forEach(([symbol, h]) => {
-			const avgPrice = h.quantity > 0 ? h.totalCost / h.quantity : 0;
-			const mktPrice = avgPrice; // MOCK: Assume market price = avg price for now (no live data)
-			const totalValue = mktPrice * h.quantity;
-			const pl = 0;
-			const plPercent = 0;
-
-			totalInvested += h.totalCost;
-			totalCurrentValue += totalValue;
-
+		activeHoldings.forEach(h => {
 			const tr = document.createElement('tr');
 			tr.className = 'border-b text-sm';
 			tr.style.borderColor = 'var(--bg-accent)';
+
+			// Format Values (Backend provides them in requested currency)
+			const fmt = (val) => {
+				const locale = state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
+				return new Intl.NumberFormat(locale, { style: 'currency', currency: currentCurrency }).format(val);
+			}
 
 			tr.innerHTML = `
                 <td class="p-4">
@@ -204,53 +165,54 @@ export const Investments = {
                 <td class="p-4">
                     <div class="flex items-center gap-sm">
                          <span class="text-lg w-8 h-8 flex items-center justify-center rounded-full bg-secondary bg-opacity-50">📈</span>
-                         <span class="capitalize font-medium">${h.assetType}</span>
+                         <span class="capitalize font-medium">${h.asset_type}</span>
                     </div>
                 </td>
-                <td class="p-4 font-bold">${symbol}</td>
+                <td class="p-4 font-bold">${h.symbol}</td>
                 <td class="p-4 text-right">${h.quantity.toFixed(2)}</td>
-                <td class="p-4 text-right">${formatCurrency(avgPrice, currentCurrency)}</td>
-                <td class="p-4 text-right">${formatCurrency(mktPrice, currentCurrency)}</td>
-                <td class="p-4 text-right font-bold">${formatCurrency(totalValue, currentCurrency)}</td>
-                <td class="p-4 text-right ${pl >= 0 ? 'text-success' : 'text-danger'}">${plPercent.toFixed(2)}%</td>
+                <td class="p-4 text-right">${fmt(h.avg_price)}</td>
+                <td class="p-4 text-right">${fmt(h.market_price)}</td>
+                <td class="p-4 text-right font-bold">${fmt(h.total_value)}</td>
+                <td class="p-4 text-right ${h.pl_percent >= 0 ? 'text-success' : 'text-danger'}">${h.pl_percent.toFixed(2)}%</td>
              `;
 			tbody.appendChild(tr);
 		});
 
-		// Update Hero Stats
-		this.updateHeroStats(totalInvested, totalCurrentValue, netCashFlow);
+		this.updateHeroStats(summary);
 	},
 
-	renderStats() {
-		// Updated in renderPortfolio for now
-	},
-
-	updateHeroStats(invested, current, netCashFlow) {
+	updateHeroStats(summary) {
 		const currentCurrency = state.currentLanguage === 'vi' ? 'VND' : 'USD';
-		document.getElementById('inv-total-invested').textContent = formatCurrency(invested, currentCurrency);
-		document.getElementById('inv-current-value').textContent = formatCurrency(current, currentCurrency);
-		const pl = current - invested;
-		const plPercent = invested > 0 ? (pl / invested) * 100 : 0;
+
+		const fmt = (val) => {
+			const locale = state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
+			return new Intl.NumberFormat(locale, { style: 'currency', currency: currentCurrency }).format(val);
+		}
+
+		if (!summary) return;
+
+		document.getElementById('inv-total-invested').textContent = fmt(summary.total_invested || 0);
+		document.getElementById('inv-current-value').textContent = fmt(summary.total_current_value || 0);
+
+		const plPercent = summary.total_pl_percent || 0;
+		const pl = (summary.total_current_value || 0) - (summary.total_invested || 0);
 
 		const plEl = document.getElementById('inv-total-pl');
 		plEl.textContent = `${plPercent.toFixed(2)}%`;
 		plEl.className = pl >= 0 ? 'text-success' : 'text-danger';
 
-		// Calculate Available Cash
-		// state.balances.investment already includes the net cash flow (via transactions.js)
+		// Available Cash: Comes from Global Balances (fetched via transactions module)
+		// Or we can use the net_cash_flow? 
+		// Actually best is to trust the Real Investment Fund Balance from 'balances'
 		let investmentBalance = 0;
 		if (state.balances && state.balances.investment) {
 			investmentBalance = (state.balances.investment.cash || 0) + (state.balances.investment.bank || 0);
 		}
 
-		console.log('Investment Balance (Available):', investmentBalance);
-
-		const availableCash = investmentBalance;
 		const availableEl = document.getElementById('inv-available-cash');
-
 		if (availableEl) {
-			availableEl.textContent = formatCurrency(availableCash, currentCurrency);
-			availableEl.className = availableCash >= 0 ? 'text-success text-xl' : 'text-danger text-xl';
+			availableEl.textContent = fmt(investmentBalance);
+			availableEl.className = investmentBalance >= 0 ? 'text-success text-xl' : 'text-danger text-xl';
 		}
 	},
 
@@ -264,8 +226,6 @@ export const Investments = {
 
 		form.reset();
 		document.getElementById('inv-type').value = type;
-
-		// Defaults
 		form.querySelector('input[name="date"]').valueAsDate = new Date();
 
 		if (type === 'buy') {
@@ -281,14 +241,9 @@ export const Investments = {
 		} else if (type === 'dividend') {
 			title.textContent = t('record_dividend_btn');
 			taxGroup.classList.remove('hidden');
-			// Hide Quantity? Dividend usually cash. 
-			// Or Keep quantity if it's stock dividend? Assume Cash Dividend for now.
 			qtyGroup.classList.add('hidden');
-			priceGroup.classList.remove('hidden'); // Use price as "Total Amount" or just amount?
-			// Form has 'price' and 'quantity'. For dividend, let's treat 'price' as total amount received, qty = 1.
+			priceGroup.classList.remove('hidden');
 			form.querySelector('input[name="quantity"]').value = 1;
-			// Update label? 
-			// Simplified: Dividend = Amount (Price) - Tax.
 			document.querySelector('#inv-price-group label').textContent = t('total_amount_label');
 		}
 

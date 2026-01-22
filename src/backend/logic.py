@@ -19,6 +19,37 @@ def convert_amount(amount, from_currency, target_currency, rate):
     
     return amount
 
+def calculate_date_range(period, custom_start=None, custom_end=None):
+    today = datetime.date.today()
+    start_date = None
+    end_date = None
+
+    if period == 'this_month':
+        start_date = today.replace(day=1)
+        # End of this month = Start of next month - 1 day
+        next_month = today.replace(day=28) + datetime.timedelta(days=4)
+        end_date = next_month.replace(day=1) - datetime.timedelta(days=1)
+    elif period == 'last_month':
+        last_month_end = today.replace(day=1) - datetime.timedelta(days=1)
+        start_date = last_month_end.replace(day=1)
+        end_date = last_month_end
+    elif period == 'this_year':
+        start_date = today.replace(month=1, day=1)
+        end_date = today.replace(month=12, day=31)
+    elif period == 'last_year':
+        start_date = today.replace(year=today.year - 1, month=1, day=1)
+        end_date = today.replace(year=today.year - 1, month=12, day=31)
+    elif period == 'custom':
+        return custom_start, custom_end
+    
+    # Format as string YYYY-MM-DD if dates are computed
+    if start_date:
+        start_date = start_date.isoformat()
+    if end_date:
+        end_date = end_date.isoformat()
+        
+    return start_date, end_date
+
 def calculate_stats(user_id, start_date, end_date, target_currency='VND'):
     rate = get_exchange_rate()
     
@@ -95,23 +126,11 @@ def calculate_stats(user_id, start_date, end_date, target_currency='VND'):
                 total[dest_source] += amount
 
     # Investment Ledger Impact
-    # JS Logic:
-    # buy -> impact = -1 * ((quantity * price) + fee)
-    # sell -> impact = (quantity * price) - fee - tax
-    # dividend -> impact = (quantity * price) - tax
     for inv in inv_transactions:
-        # Investment transactions don't store currency, assuming they are in base currency or same as settings? 
-        # JS `utils.js` convertAmount used convertAmount(inv.price, 'VND') so it assumes it needs conversion. 
-        # But `investment_transactions` table doesn't have a currency column. 
-        # We will assume they are in VND for simplicity or same logic as JS 'convertAmount(inv.price, 'VND')' 
-        # effectively does nothing if fromCurrency defaults to VND. 
-        # Let's check JS again.
-        # JS: const price = convertAmount(inv.price, 'VND'); -> convertAmount(val, 'VND') returns val if target is VND.
-        # So it implies Investment Transactions are recorded in VND? Or user just inputs numbers.
-        # We will assume values are in system base currency (VND) effectively.
-        
-        # Wait, if target_currency is USD, we need to convert these values.
-        # We treat input values as VND (Base)
+        # Assuming investment activity (buy/sell) happens via Bank usually, or we need source column in Inv table
+        # JS impl assumed 'bank' impact for investment transactions logic implicitly in 'calculate_stats' earlier?
+        # Actually in JS 'logic.py' previously: investment['bank'] += impact. 
+        # So we keep that assumption that investment operations hit the Investment Fund Bank Balance.
         
         i_price = convert_amount(inv['price'], 'VND', target_currency, rate)
         i_fee = convert_amount(inv['fee'], 'VND', target_currency, rate)
@@ -124,9 +143,10 @@ def calculate_stats(user_id, start_date, end_date, target_currency='VND'):
         elif inv['type'] == 'sell':
             impact = (qty * i_price) - i_fee - i_tax
         elif inv['type'] == 'dividend':
+            # Dividend: Price treated as Total Amount usually in simple UI, or Price * Qty.
+            # Let's stick to (Price * Qty) - Tax for consistency.
             impact = (qty * i_price) - i_tax
             
-        # JS assumes bank for investments activity
         investment['bank'] += impact
 
     # --- Period Stats (Income/Expense for selected period) ---
@@ -172,10 +192,16 @@ def calculate_stats(user_id, start_date, end_date, target_currency='VND'):
                 chart_data[cat][source] += amount
 
     # Format Chart Data for Frontend
-    # JS expects: labels, cashData, bankData
     chart_cats = list(chart_data.keys())
     chart_cash = [chart_data[c]['cash'] for c in chart_cats]
     chart_bank = [chart_data[c]['bank'] for c in chart_cats]
+    
+    # Aggregates for Frontend Convenience
+    total_balance_all = (total['cash'] + total['bank'] + 
+                         saving['cash'] + saving['bank'] + 
+                         support['cash'] + support['bank'] + 
+                         investment['cash'] + investment['bank'] + 
+                         together['cash'] + together['bank'])
 
     return {
         "balances": {
@@ -183,7 +209,8 @@ def calculate_stats(user_id, start_date, end_date, target_currency='VND'):
             "saving": saving,
             "support": support,
             "investment": investment,
-            "together": together
+            "together": together,
+            "grand_total": total_balance_all
         },
         "period_stats": {
             "income": {
@@ -203,5 +230,83 @@ def calculate_stats(user_id, start_date, end_date, target_currency='VND'):
                 "cash": chart_cash,
                 "bank": chart_bank
             }
+        }
+    }
+
+def calculate_portfolio(user_id, target_currency='VND'):
+    rate = get_exchange_rate()
+    rows = query_db('SELECT * FROM investment_transactions WHERE user_id = ? ORDER BY date ASC', (user_id,))
+    
+    holdings = {} # symbol -> { quantity, total_cost, asset_type }
+    net_cash_flow = 0.0
+    
+    for row in rows:
+        price = convert_amount(row['price'], 'VND', target_currency, rate)
+        fee = convert_amount(row['fee'], 'VND', target_currency, rate)
+        tax = convert_amount(row['tax'], 'VND', target_currency, rate)
+        qty = row['quantity']
+        typ = row['type']
+        symbol = row['symbol']
+        # sqlite3.Row might not have .get(), use standard access or check keys
+        asset_type = row['asset_type'] if 'asset_type' in row.keys() else 'stock'
+        
+        if symbol not in holdings:
+            holdings[symbol] = {'quantity': 0.0, 'total_cost': 0.0, 'asset_type': asset_type}
+            
+        if typ == 'buy':
+            cost = (qty * price) + fee
+            holdings[symbol]['quantity'] += qty
+            holdings[symbol]['total_cost'] += cost
+            net_cash_flow -= cost
+        elif typ == 'sell':
+            # Average Cost logic
+            current_qty = holdings[symbol]['quantity']
+            current_cost = holdings[symbol]['total_cost']
+            avg_cost = (current_cost / current_qty) if current_qty > 0 else 0
+            
+            holdings[symbol]['quantity'] -= qty
+            holdings[symbol]['total_cost'] -= (avg_cost * qty)
+            
+            revenue = (qty * price) - fee - tax
+            net_cash_flow += revenue
+        elif typ == 'dividend':
+            income = (qty * price) - tax
+            net_cash_flow += income
+            
+    # Calculate Summary
+    active_holdings = []
+    total_invested = 0.0
+    total_current_value = 0.0
+    
+    for symbol, data in holdings.items():
+        if data['quantity'] > 0.0001:
+            avg_price = data['total_cost'] / data['quantity']
+            # MOCK: Market Price = Avg Price (since we don't have live API)
+            market_price = avg_price 
+            current_value = market_price * data['quantity']
+            
+            total_invested += data['total_cost']
+            total_current_value += current_value
+            
+            active_holdings.append({
+                "symbol": symbol,
+                "asset_type": data['asset_type'],
+                "quantity": round(data['quantity'], 4),
+                "avg_price": avg_price,
+                "market_price": market_price,
+                "total_value": current_value,
+                "pl_percent": 0.0 # Mock
+            })
+            
+    total_pl = total_current_value - total_invested
+    total_pl_percent = (total_pl / total_invested * 100) if total_invested > 0 else 0.0
+    
+    return {
+        "holdings": active_holdings,
+        "summary": {
+            "total_invested": total_invested,
+            "total_current_value": total_current_value,
+            "total_pl_percent": total_pl_percent,
+            "net_cash_flow": net_cash_flow
         }
     }

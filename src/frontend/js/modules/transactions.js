@@ -8,7 +8,6 @@ export const Transactions = {
 		// Static Header Actions (Always in index.html)
 		const addBtn = document.getElementById('add-transaction-btn');
 		if (addBtn) {
-			// Remove existing to be safe (optional, but good practice if called multiple times)
 			const newBtn = addBtn.cloneNode(true);
 			addBtn.parentNode.replaceChild(newBtn, addBtn);
 			newBtn.addEventListener('click', () => this.openAddModal());
@@ -22,7 +21,6 @@ export const Transactions = {
 
 		// Listen for other events
 		document.addEventListener('auth:login_success', () => {
-			// If view is already active, fetch
 			if (!document.getElementById('view-monthly').classList.contains('hidden')) {
 				this.fetchAndRender();
 			}
@@ -33,7 +31,6 @@ export const Transactions = {
 	},
 
 	onViewLoaded() {
-		// Called when Monthly View is injected
 		this.bindTableEvents();
 		this.bindChartEvents();
 		this.fetchAndRender(); // Fetch new data
@@ -44,7 +41,6 @@ export const Transactions = {
 		const chartContainer = document.getElementById('chart-container');
 
 		if (toggleBtn && chartContainer) {
-			// Restore state
 			const isVisible = localStorage.getItem('parfin_chart_visible') !== 'false';
 			if (!isVisible) {
 				chartContainer.classList.add('hidden');
@@ -53,7 +49,6 @@ export const Transactions = {
 				toggleBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
 			}
 
-			// Prevent duplicate binding
 			if (toggleBtn.dataset.bound) return;
 
 			toggleBtn.addEventListener('click', () => {
@@ -74,7 +69,7 @@ export const Transactions = {
 
 	bindModalEvents() {
 		const form = document.getElementById('transaction-form');
-		if (!form || form.dataset.bound) return; // Prevent double binding
+		if (!form || form.dataset.bound) return;
 
 		const cancelBtn = document.getElementById('cancel-transaction-btn');
 		if (cancelBtn) {
@@ -96,18 +91,22 @@ export const Transactions = {
 	bindTableEvents() {
 		// Filter Elements
 		const filterPeriod = document.getElementById('filter-period');
-		const filterCustomDates = document.getElementById('filter-custom-dates');
 		const filterStartDate = document.getElementById('filter-start-date');
 		const filterEndDate = document.getElementById('filter-end-date');
 		const filterCategory = document.getElementById('filter-category');
 
-		// Only bind if filterPeriod exists and hasn't been bound
 		if (filterPeriod && !filterPeriod.dataset.bound) {
 			filterPeriod.value = state.filterParams.period || 'this_month';
 			filterPeriod.addEventListener('change', (e) => {
-				console.log('Filter changed:', e.target.value);
 				const period = e.target.value;
 				state.filterParams.period = period;
+
+				// Reset custom dates if switching away from custom
+				if (period !== 'custom') {
+					state.filterParams.start_date = null;
+					state.filterParams.end_date = null;
+				}
+
 				this.updateFilterUI();
 				this.fetchAndRender();
 			});
@@ -124,11 +123,9 @@ export const Transactions = {
 				option.textContent = getCategoryName(cat);
 				filterCategory.appendChild(option);
 			});
-			// Restore value
 			if (state.filterParams.category) filterCategory.value = state.filterParams.category;
 
 			filterCategory.addEventListener('change', (e) => {
-				console.log('Category changed:', e.target.value);
 				state.filterParams.category = e.target.value;
 				this.fetchAndRender();
 			});
@@ -136,10 +133,11 @@ export const Transactions = {
 		}
 
 		const dateChangeHandler = () => {
-			console.log('Custom dates changed');
-			state.filterParams.startDate = filterStartDate.value;
-			state.filterParams.endDate = filterEndDate.value;
-			this.fetchAndRender();
+			state.filterParams.start_date = filterStartDate.value;
+			state.filterParams.end_date = filterEndDate.value;
+			if (state.filterParams.start_date && state.filterParams.end_date) {
+				this.fetchAndRender();
+			}
 		};
 
 		if (filterStartDate && !filterStartDate.dataset.bound) {
@@ -151,7 +149,6 @@ export const Transactions = {
 			filterEndDate.dataset.bound = "true";
 		}
 
-		// Initial UI State
 		this.updateFilterUI();
 
 		// Sorting
@@ -166,10 +163,7 @@ export const Transactions = {
 	},
 
 	updateFilterUI() {
-		const filterPeriod = document.getElementById('filter-period');
 		const filterCustomDates = document.getElementById('filter-custom-dates');
-
-		// Check if elements exist before trying to access classList
 		if (!filterCustomDates) return;
 
 		if (state.filterParams.period === 'custom') {
@@ -191,8 +185,6 @@ export const Transactions = {
 			]);
 
 			state.transactions = transactions;
-			console.log('Stats received:', stats);
-
 			this.render();
 			this.renderStats(stats);
 		} catch (err) {
@@ -203,53 +195,18 @@ export const Transactions = {
 	},
 
 	computeParams() {
-		const params = { ...state.filterParams };
-		const period = params.period || 'this_month';
-		const today = new Date();
-
-		const formatDate = (date) => {
-			const offset = date.getTimezoneOffset();
-			const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-			return localDate.toISOString().split('T')[0];
+		// Simply merge filters and sort params
+		const params = {
+			...state.filterParams,
+			...state.sortParams
 		};
-
-		if (period === 'this_month') {
-			const start = new Date(today.getFullYear(), today.getMonth(), 1);
-			const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-			params.start_date = formatDate(start);
-			params.end_date = formatDate(end);
-		} else if (period === 'last_month') {
-			const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-			const end = new Date(today.getFullYear(), today.getMonth(), 0);
-			params.start_date = formatDate(start);
-			params.end_date = formatDate(end);
-		} else if (period === 'this_year') {
-			const start = new Date(today.getFullYear(), 0, 1);
-			const end = new Date(today.getFullYear(), 11, 31);
-			params.start_date = formatDate(start);
-			params.end_date = formatDate(end);
-		} else if (period === 'last_year') {
-			const start = new Date(today.getFullYear() - 1, 0, 1);
-			const end = new Date(today.getFullYear() - 1, 11, 31);
-			params.start_date = formatDate(start);
-			params.end_date = formatDate(end);
-		} else if (period === 'custom') {
-			params.start_date = params.startDate;
-			params.end_date = params.endDate;
-		}
-
-		console.log('Computed API params:', params);
+		// No date calculation here anymore. Passed as 'period' or 'start_date/end_date'
 		return params;
 	},
 
+	// Legacy method support if needed
 	async fetchTransactions() {
-		// Legacy support if called directly, though fetchAndRender is preferred
-		const params = this.computeParams();
-		try {
-			const data = await Api.getTransactions(params);
-			state.transactions = data;
-			this.render();
-		} catch (e) { console.error(e); }
+		this.fetchAndRender();
 	},
 
 	render() {
@@ -265,25 +222,7 @@ export const Transactions = {
 		}
 
 		const locale = state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
-		const sortParams = state.sortParams;
-		const { field, direction } = sortParams;
-
-		const sortedTransactions = [...transactions].sort((a, b) => {
-			if (!a || !b) return 0;
-			if (field === 'date') {
-				const dateA = new Date(a.date);
-				const dateB = new Date(b.date);
-				if (isNaN(dateA)) return 1;
-				if (isNaN(dateB)) return -1;
-				if (dateA < dateB) return direction === 'asc' ? -1 : 1;
-				if (dateA > dateB) return direction === 'asc' ? 1 : -1;
-				return direction === 'asc' ? ((a.id || 0) - (b.id || 0)) : ((b.id || 0) - (a.id || 0));
-			}
-			if (field === 'amount') {
-				return direction === 'asc' ? (a.amount - b.amount) : (b.amount - a.amount);
-			}
-			return 0;
-		});
+		const { field, direction } = state.sortParams;
 
 		// Update Sort Icons
 		document.querySelectorAll('th[data-sort]').forEach(th => {
@@ -298,7 +237,8 @@ export const Transactions = {
 			}
 		});
 
-		sortedTransactions.forEach(transaction => {
+		// Render Rows (Data is already sorted from backend)
+		transactions.forEach(transaction => {
 			const tr = document.createElement('tr');
 			tr.className = 'border-b text-sm hovering-row';
 			tr.style.borderColor = 'var(--bg-accent)';
@@ -327,7 +267,6 @@ export const Transactions = {
 			}
 
 			const sourceClass = transaction.source === 'bank' ? 'badge-info' : 'badge-success';
-			// Badge-like appearance for Source
 			const sourceBadge = `<span class="badge ${sourceClass} bg-opacity-10" style="font-size: 0.75rem;">${sourceName}</span>`;
 
 			tr.innerHTML = `
@@ -383,7 +322,6 @@ export const Transactions = {
 		const form = document.getElementById('transaction-form');
 		form.id.value = transaction.id;
 
-		// Conversion logic for display
 		let displayAmount = convertAmount(transaction.amount, transaction.currency);
 		if (state.currentLanguage === 'vi') {
 			displayAmount = Math.round(displayAmount);
@@ -397,7 +335,6 @@ export const Transactions = {
 			radio.checked = radio.value === transaction.type;
 		});
 
-		// Dataset for preservation
 		form.dataset.targetFund = transaction.fund || '';
 		form.dataset.targetSource = transaction.source || 'cash';
 
@@ -405,7 +342,6 @@ export const Transactions = {
 			form.dataset.targetDestCategory = transaction.destination_category || '';
 		}
 
-		// Update form state (rebuilds options) BEFORE setting values
 		this.updateFormState();
 
 		form.category.value = transaction.category;
@@ -430,29 +366,27 @@ export const Transactions = {
 
 		const categorySelect = form.querySelector('select[name="category"]');
 
-		// Grid Logic
 		const sourceSection = document.getElementById('source-section');
 		const destGroup = document.getElementById('destination-group');
 		const sourceTitle = document.getElementById('source-title');
 
 		if (type === 'allocation') {
 			sourceSection.classList.add('source-section');
-			sourceSection.classList.add('modal-section'); // Add border
+			sourceSection.classList.add('modal-section');
 			sourceTitle.classList.remove('hidden');
 			sourceTitle.textContent = t('source_from_title');
 
 			destGroup.classList.remove('hidden');
-			destGroup.classList.add('modal-section'); // Add border
+			destGroup.classList.add('modal-section');
 		} else {
 			sourceSection.classList.remove('source-section');
-			sourceSection.classList.remove('modal-section'); // Remove border
+			sourceSection.classList.remove('modal-section');
 			sourceTitle.textContent = t('source_details_title');
 
 			destGroup.classList.add('hidden');
-			destGroup.classList.remove('modal-section'); // Remove border
+			destGroup.classList.remove('modal-section');
 		}
 
-		// Categories
 		categorySelect.innerHTML = '';
 		let categories = [];
 		if (type === 'income') {
@@ -470,7 +404,6 @@ export const Transactions = {
 			categorySelect.appendChild(option);
 		});
 
-		// Use Fund
 		const useFundGroup = document.getElementById('use-fund-group');
 		if (type === 'expense') {
 			useFundGroup.classList.remove('hidden');
@@ -479,7 +412,6 @@ export const Transactions = {
 			form.fund.value = '';
 		}
 
-		// Dest Category
 		if (type === 'allocation') {
 			const destSelect = form.querySelector('select[name="destination_category"]');
 			const targetDest = form.dataset.targetDestCategory;
@@ -517,7 +449,7 @@ export const Transactions = {
 			if (result.ok) {
 				this.hideModal();
 				showToast(t(data.id ? 'toast_update_success' : 'toast_add_success'), 'success');
-				this.fetchAndRender(); // update list
+				this.fetchAndRender();
 			} else {
 				showToast(t('toast_error'), 'error');
 			}
@@ -542,33 +474,24 @@ export const Transactions = {
 	},
 
 	handleSort(field) {
+		// Update sort state only, api called in fetchAndRender
 		if (state.sortParams.field === field) {
-			state.sortParams.direction = state.sortParams.direction === 'asc' ? 'desc' : 'asc';
+			state.sortParams.order = state.sortParams.order === 'asc' ? 'desc' : 'asc';
+			// Sync with 'direction' for frontend legacy if needed
+			state.sortParams.direction = state.sortParams.order;
 		} else {
 			state.sortParams.field = field;
+			state.sortParams.order = 'desc';
 			state.sortParams.direction = 'desc';
 		}
-		this.render();
+		this.fetchAndRender();
 	},
 
 	renderStats(stats) {
 		const { balances, period_stats, chart_data } = stats;
-
 		const targetCurrency = state.currentLanguage === 'vi' ? 'VND' : 'USD';
-		// Helper to format
-		const fmt = (val) => formatCurrency(val, targetCurrency); // Backend already converted, but formatCurrency takes amount and fromCurrency. 
-		// Wait, formatCurrency signature is (amount, fromCurrency). It converts inside.
-		// BUT backend already returned values in 'targetCurrency' if we requested it.
-		// So we should NOT convert again.
-		// function formatCurrency(amount, fromCurrency = 'VND') { ... convertAmount ... }
-		// Issue: formatCurrency forces conversion.
-		// Fix: Pass targetCurrency as fromCurrency to formatCurrency so it skips conversion.
 
-		const updateText = (id, val) => {
-			const el = document.getElementById(id);
-			if (el) el.textContent = fmt(val);
-		};
-		// Override helper to avoid double conversion
+		// Helper to format without conversion (since backend already converted)
 		const fmtDirect = (val) => {
 			const locale = state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
 			return new Intl.NumberFormat(locale, { style: 'currency', currency: targetCurrency }).format(val);
@@ -578,13 +501,8 @@ export const Transactions = {
 			if (el) el.textContent = fmtDirect(val);
 		};
 
-		const totalAll = balances.total.cash + balances.total.bank +
-			balances.saving.cash + balances.saving.bank +
-			balances.support.cash + balances.support.bank +
-			balances.investment.cash + balances.investment.bank +
-			balances.together.cash + balances.together.bank;
-
-		updateTextDirect('total-balance', totalAll);
+		// Use Grand Total from backend
+		updateTextDirect('total-balance', balances.grand_total);
 		updateTextDirect('balance-cash', balances.total.cash);
 		updateTextDirect('balance-bank', balances.total.bank);
 
@@ -617,7 +535,7 @@ export const Transactions = {
 		updateTextDirect('together-cash', balances.together.cash);
 		updateTextDirect('together-bank', balances.together.bank);
 
-		state.balances = balances; // Store for other uses
+		state.balances = balances;
 
 		this.renderChart(chart_data);
 	},
@@ -663,7 +581,7 @@ export const Transactions = {
 								if (context.parsed.y !== null) {
 									const targetCurrency = state.currentLanguage === 'vi' ? 'VND' : 'USD';
 									const locale = state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
-									label += new Intl.NumberFormat(locale, { style: 'currency', currency: targetCurrency }).format(context.parsed.y);
+									return label + new Intl.NumberFormat(locale, { style: 'currency', currency: targetCurrency }).format(context.parsed.y);
 								}
 								return label;
 							}
