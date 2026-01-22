@@ -1,4 +1,3 @@
-
 export const Api = {
 	async login(data) {
 		const response = await fetch('/api/auth/login', {
@@ -10,9 +9,6 @@ export const Api = {
 	},
 
 	async checkAuth() {
-		// Since we are using localStorage mock in frontend for now, 
-		// this might just call an endpoint if we had sessions.
-		// For now, minimal.
 		const response = await fetch('/api/auth/check');
 		return response.ok;
 	},
@@ -21,16 +17,35 @@ export const Api = {
 		let url = '/api/transactions';
 		const queryParams = [];
 		if (params.month) queryParams.push(`month=${params.month}`); // Legacy
+		if (params.period) queryParams.push(`period=${params.period}`);
 		if (params.start_date) queryParams.push(`start_date=${params.start_date}`);
 		if (params.end_date) queryParams.push(`end_date=${params.end_date}`);
 		if (params.category && params.category !== 'all') queryParams.push(`category=${params.category}`);
 		if (params.type && params.type !== 'all') queryParams.push(`type=${params.type}`);
+		if (params.sort_by) queryParams.push(`sort_by=${params.sort_by}`);
+		if (params.order) queryParams.push(`order=${params.order}`);
 
 		if (queryParams.length > 0) {
 			url += '?' + queryParams.join('&');
 		}
 		const response = await fetch(url);
 		if (!response.ok) throw new Error('Failed to fetch transactions');
+		return await response.json();
+	},
+
+	async getStats(params = {}) {
+		let url = '/api/stats';
+		const queryParams = [];
+		if (params.period) queryParams.push(`period=${params.period}`);
+		if (params.start_date) queryParams.push(`start_date=${params.start_date}`);
+		if (params.end_date) queryParams.push(`end_date=${params.end_date}`);
+		if (params.currency) queryParams.push(`currency=${params.currency}`);
+
+		if (queryParams.length > 0) {
+			url += '?' + queryParams.join('&');
+		}
+		const response = await fetch(url);
+		if (!response.ok) throw new Error('Failed to fetch stats');
 		return await response.json();
 	},
 
@@ -42,7 +57,7 @@ export const Api = {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(data)
 		});
-		return { ok: response.ok, status: response.status, data: await response.json() }; // Some endpoints return empty body or basic success
+		return { ok: response.ok, status: response.status, data: await response.json() };
 	},
 
 	async deleteTransaction(id) {
@@ -57,6 +72,20 @@ export const Api = {
 	async getInvestments() {
 		const response = await fetch('/api/investments');
 		if (!response.ok) throw new Error('Failed to fetch investments');
+		return await response.json();
+	},
+
+	async getInvestmentPortfolio(params = {}) {
+		let url = '/api/investments/portfolio';
+		const queryParams = [];
+		if (params.currency) queryParams.push(`currency=${params.currency}`);
+
+		if (queryParams.length > 0) {
+			url += '?' + queryParams.join('&');
+		}
+
+		const response = await fetch(url);
+		if (!response.ok) throw new Error('Failed to fetch portfolio');
 		return await response.json();
 	},
 

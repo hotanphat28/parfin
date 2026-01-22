@@ -8,6 +8,7 @@ from urllib.parse import urlparse, parse_qs
 from backend.db import init_db, query_db, get_db_connection
 import hashlib
 import uuid
+import backend.logic as logic
 
 # Helper to handle paths relative to the run.py
 PORT = 8000
@@ -26,7 +27,12 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
         
         # API Routes
         if path.startswith('/api/'):
-            self.handle_api_get(path, parse_qs(parsed_path.query))
+            try:
+                self.handle_api_get(path, parse_qs(parsed_path.query))
+            except Exception as e:
+                print(f"API Error: {e}")
+                self._set_headers(500)
+                self.wfile.write(json.dumps({"error": str(e)}).encode())
             return
 
         # Static File Serving
@@ -48,36 +54,60 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(b'Not Found')
 
     def do_POST(self):
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
-        
         try:
+            content_length_str = self.headers['Content-Length']
+            if not content_length_str:
+                self._set_headers(411) # Length Required
+                return
+            content_length = int(content_length_str)
+            post_data = self.rfile.read(content_length)
+            
             data = json.loads(post_data.decode('utf-8'))
-        except json.JSONDecodeError:
-            self._set_headers(400)
-            self.wfile.write(json.dumps({"error": "Invalid JSON"}).encode())
-            return
-
-        parsed_path = urlparse(self.path)
-        if parsed_path.path.startswith('/api/'):
-            self.handle_api_post(parsed_path.path, data)
-        else:
-            self._set_headers(404)
-            self.wfile.write(b'Not Found')
+        
+            parsed_path = urlparse(self.path)
+            if parsed_path.path.startswith('/api/'):
+                self.handle_api_post(parsed_path.path, data)
+            else:
+                self._set_headers(404)
+                self.wfile.write(b'Not Found')
+        except Exception as e:
+             print(f"POST Error: {e}")
+             self._set_headers(500)
+             self.wfile.write(json.dumps({"error": str(e)}).encode())
 
     # API Handlers
     def handle_api_get(self, path, query_params):
         if path == '/api/auth/check':
              self._set_headers(200)
              self.wfile.write(json.dumps({"status": "ok"}).encode())
+             
         elif path == '/api/transactions':
              # Query params handling
              query = query_params
              
-             start_date = query.get('start_date', [None])[0]
-             end_date = query.get('end_date', [None])[0]
+             # Date Range Logic
+             period = query.get('period', [''])[0]
+             start_date_param = query.get('start_date', [None])[0]
+             end_date_param = query.get('end_date', [None])[0]
+             
+             if period:
+                 start_date, end_date = logic.calculate_date_range(period, start_date_param, end_date_param)
+             else:
+                 # Fallback if no period but explicit dates
+                 start_date = start_date_param
+                 end_date = end_date_param
+             
              category = query.get('category', [None])[0]
              trans_type = query.get('type', [None])[0]
+             
+             # Sorting Logic
+             sort_by = query.get('sort_by', ['date'])[0]
+             order = query.get('order', ['desc'])[0]
+             
+             # Whitelist sort columns to prevent injection
+             valid_sort_cols = ['date', 'amount', 'category', 'type']
+             if sort_by not in valid_sort_cols:
+                 sort_by = 'date'
              
              sql = "SELECT * FROM transactions WHERE 1=1"
              args = []
@@ -95,10 +125,10 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                  sql += " AND type = ?"
                  args.append(trans_type)
                  
-             sql += " ORDER BY date DESC"
+             sql += f" ORDER BY {sort_by} {order.upper()}, id {order.upper()}"
+             
              rows = query_db(sql, args)
              
-             # Convert rows to info dicts
              result = []
              for row in rows:
                  result.append({
@@ -119,7 +149,6 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
              self.wfile.write(json.dumps(result).encode())
 
         elif path == '/api/users':
-             # Admin check should be here ideally
              rows = query_db('SELECT id, username, role, created_at FROM users')
              users = []
              for row in rows:
@@ -131,9 +160,30 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                  })
              self._set_headers(200)
              self.wfile.write(json.dumps(users).encode())
+
+        elif path == '/api/stats':
+             query = query_params
+             
+             # Use the same logic for dates as transactions if period is provided, else fallback
+             period = query.get('period', [''])[0]
+             start_date_param = query.get('start_date', [None])[0]
+             end_date_param = query.get('end_date', [None])[0]
+             
+             if period:
+                 start_date, end_date = logic.calculate_date_range(period, start_date_param, end_date_param)
+             else:
+                 start_date = start_date_param
+                 end_date = end_date_param
+                 
+             currency = query.get('currency', ['VND'])[0]
+             user_id = 1
+             
+             stats = logic.calculate_stats(user_id, start_date, end_date, currency)
+             self._set_headers(200)
+             self.wfile.write(json.dumps(stats).encode())
              
         elif path == '/api/export':
-             # Query params: month (YYYY-MM), format (json|csv)
+             # Reuse filters? For now keep simple
              month = query_params.get('month', [None])[0]
              export_format = query_params.get('format', ['json'])[0]
              
@@ -157,7 +207,6 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                       "date": row['date'],
                       "currency": row['currency'],
                       "source": row['source'],
-                      "source": row['source'],
                       "destination": row['destination'] if 'destination' in row.keys() else None,
                       "destination_category": row['destination_category'] if 'destination_category' in row.keys() else None,
                       "fund": row['fund'] if 'fund' in row.keys() else None
@@ -168,13 +217,14 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                  import io
                  
                  output = io.StringIO()
-                 # Define CSV columns
                  fieldnames = ['id', 'date', 'type', 'category', 'amount', 'currency', 'source', 'fund', 'description']
                  writer = csv.DictWriter(output, fieldnames=fieldnames)
                  
                  writer.writeheader()
                  for row in export_data:
-                     writer.writerow(row)
+                     # Filter row to only fieldnames
+                     csv_row = {k: row.get(k) for k in fieldnames}
+                     writer.writerow(csv_row)
                  
                  csv_content = output.getvalue()
                  
@@ -185,7 +235,6 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                  self.wfile.write(csv_content.encode('utf-8'))
                  
              else:
-                 # Default JSON
                  self.send_response(200)
                  self.send_header('Content-type', 'application/json')
                  self.send_header('Content-Disposition', f'attachment; filename="transactions_{month or "all"}.json"')
@@ -193,7 +242,6 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                  self.wfile.write(json.dumps(export_data, indent=2).encode('utf-8'))
 
         elif path == '/api/fixed_items':
-             # Fetch all fixed items for user (default 1 for now)
              user_id = 1
              items = query_db('SELECT * FROM fixed_items WHERE user_id = ?', (user_id,))
              
@@ -215,19 +263,14 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
              self.wfile.write(json.dumps(result).encode())
 
         elif path == '/api/settings':
-             # Fetch all settings
              rows = query_db('SELECT * FROM settings')
              settings = {row['key']: row['value'] for row in rows}
-             
              self._set_headers(200)
              self.wfile.write(json.dumps(settings).encode())
 
-
         elif path == '/api/investments':
-             # Fetch all investment transactions
-             # In a real app we would get user_id from session
              user_id = 1
-             
+             # Default sort by date desc
              rows = query_db('SELECT * FROM investment_transactions WHERE user_id = ? ORDER BY date DESC', (user_id,))
              
              result = []
@@ -247,6 +290,14 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
              
              self._set_headers(200)
              self.wfile.write(json.dumps(result).encode())
+        
+        elif path == '/api/investments/portfolio':
+             user_id = 1
+             currency = query_params.get('currency', ['VND'])[0]
+             
+             portfolio = logic.calculate_portfolio(user_id, currency)
+             self._set_headers(200)
+             self.wfile.write(json.dumps(portfolio).encode())
 
         else:
              self._set_headers(404)
@@ -257,7 +308,6 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             username = data.get('username')
             password = data.get('password')
             
-            # Hash generic
             pw_hash = hashlib.sha256(password.encode()).hexdigest()
             
             user = query_db('SELECT * FROM users WHERE username = ? AND password_hash = ?', 
@@ -265,7 +315,6 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             
             if user:
                 self._set_headers(200)
-                # In real app, set Set-Cookie header here
                 self.wfile.write(json.dumps({
                     "success": True, 
                     "user": {"username": user['username'], "role": user['role']}
@@ -275,8 +324,6 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"success": False, "error": "Invalid credentials"}).encode())
                 
         elif path == '/api/users/create':
-            # Check for admin role (mock logic for now, implementing session later)
-            # if not is_admin: return 403
             username = data.get('username')
             password = data.get('password')
             role = data.get('role', 'user')
@@ -291,9 +338,9 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                 conn.close()
                 self._set_headers(201)
                 self.wfile.write(json.dumps({"success": True}).encode())
-            except sqlite3.IntegrityError:
+            except Exception as e: # Handle Sqlite error broadly if name unavailable
                 self._set_headers(400)
-                self.wfile.write(json.dumps({"error": "User already exists"}).encode())
+                self.wfile.write(json.dumps({"error": "User likely already exists"}).encode())
 
         elif path == '/api/users/delete':
             user_id = data.get('id')
@@ -302,8 +349,6 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": "User ID required"}).encode())
                 return
                 
-            # Prevent deleting the main admin for safety
-            # In a real app, strict permission checks needed
             if user_id == 1: 
                  self._set_headers(403)
                  self.wfile.write(json.dumps({"error": "Cannot delete root admin"}).encode())
@@ -319,7 +364,7 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"success": True}).encode())
         
         elif path == '/api/transactions/create':
-            user_id = data.get('user_id', 1) # Default to 1 (admin) if not provided
+            user_id = data.get('user_id', 1) 
             amount = float(data.get('amount'))
             trans_type = data.get('type')
             category = data.get('category')
@@ -345,7 +390,6 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"success": True}).encode())
 
         elif path == '/api/transactions/update':
-            # Check owner in real app
             trans_id = data.get('id')
             amount = float(data.get('amount'))
             trans_type = data.get('type')
@@ -384,7 +428,6 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"success": True}).encode())
 
         elif path == '/api/import':
-            # Data format: { "format": "csv"|"json", "data": "..." }
             import_format = data.get('format')
             import_data = data.get('data')
             
@@ -396,17 +439,11 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             try:
                 conn = get_db_connection()
                 c = conn.cursor()
-                
-                # Assume user_id = 1 for now
                 user_id = 1
                 
                 if import_format == 'json':
-                    # Expecting import_data to be a list of dicts or a JSON string representing list of dicts
-                    # If it came from client as object, standard use case.
                     transactions = import_data if isinstance(import_data, list) else json.loads(import_data)
-                    
                     for t in transactions:
-                        # minimal validation
                          c.execute('''
                             INSERT INTO transactions (user_id, amount, type, category, description, source, fund, date)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -414,15 +451,10 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
                               t.get('description', ''), t.get('source', 'cash'), t.get('fund'), t.get('date')))
                         
                 elif import_format == 'csv':
-                    # Parse CSV string
                     import csv
                     import io
-                    
-                    # Fix: Handle potential variation in line endings or quotes
                     f = io.StringIO(import_data)
                     reader = csv.DictReader(f)
-                    
-                    # Expected CSV headers: amount,type,category,description,source,date
                     for row in reader:
                         c.execute('''
                             INSERT INTO transactions (user_id, amount, type, category, description, source, fund, date)
@@ -489,20 +521,17 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
 
         elif path == '/api/fixed_items/delete':
             item_id = data.get('id')
-            
             conn = get_db_connection()
             c = conn.cursor()
             c.execute('DELETE FROM fixed_items WHERE id = ?', (item_id,))
             conn.commit()
             conn.close()
-            
             self._set_headers(200)
             self.wfile.write(json.dumps({"success": True}).encode())
 
         elif path == '/api/fixed_items/generate':
-            # Generate transactions from fixed items for a specific month/date
             user_id = data.get('user_id', 1)
-            target_date = data.get('date') # Format: YYYY-MM-DD
+            target_date = data.get('date')
             
             if not target_date:
                 self._set_headers(400)
@@ -511,17 +540,9 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
 
             conn = get_db_connection()
             c = conn.cursor()
-            
-            # Get all fixed items
             c.execute('SELECT * FROM fixed_items WHERE user_id = ?', (user_id,))
             items = c.fetchall()
             
-            if not items:
-                conn.close()
-                self._set_headers(200)
-                self.wfile.write(json.dumps({"success": True, "count": 0, "message": "No fixed items found"}).encode())
-                return
-
             count = 0
             for item in items:
                 c.execute('''
@@ -541,23 +562,16 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"success": True, "count": count}).encode())
 
         elif path == '/api/settings/update':
-            # Update settings. Expects data to be a dict of key-value pairs
-            # e.g. { "exchange_rate_usd_vnd": "24500" }
-            
             try:
                 conn = get_db_connection()
                 c = conn.cursor()
-                
                 for key, value in data.items():
-                    # Upsert logic
                     c.execute('''
                         INSERT INTO settings (key, value) VALUES (?, ?)
                         ON CONFLICT(key) DO UPDATE SET value=excluded.value
                     ''', (key, str(value)))
-                    
                 conn.commit()
                 conn.close()
-                
                 self._set_headers(200)
                 self.wfile.write(json.dumps({"success": True}).encode())
             except Exception as e:
@@ -591,13 +605,11 @@ class ParFinHandler(http.server.BaseHTTPRequestHandler):
 
         elif path == '/api/investments/delete':
             trans_id = data.get('id')
-            
             conn = get_db_connection()
             c = conn.cursor()
             c.execute('DELETE FROM investment_transactions WHERE id = ?', (trans_id,))
             conn.commit()
             conn.close()
-            
             self._set_headers(200)
             self.wfile.write(json.dumps({"success": True}).encode())
 
@@ -610,9 +622,6 @@ class ReusableTCPServer(socketserver.TCPServer):
 
 def run_server():
     init_db()
-    # Change to root dir so imports work correctly from src/backend if needed, 
-    # but we are running from root using run.py, so we should be good.
-    
     with ReusableTCPServer(("", PORT), ParFinHandler) as httpd:
         print(f"ParFin serving at port {PORT}")
         httpd.serve_forever()

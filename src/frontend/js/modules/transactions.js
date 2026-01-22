@@ -8,7 +8,6 @@ export const Transactions = {
 		// Static Header Actions (Always in index.html)
 		const addBtn = document.getElementById('add-transaction-btn');
 		if (addBtn) {
-			// Remove existing to be safe (optional, but good practice if called multiple times)
 			const newBtn = addBtn.cloneNode(true);
 			addBtn.parentNode.replaceChild(newBtn, addBtn);
 			newBtn.addEventListener('click', () => this.openAddModal());
@@ -22,19 +21,16 @@ export const Transactions = {
 
 		// Listen for other events
 		document.addEventListener('auth:login_success', () => {
-			// If view is already active, fetch
 			if (!document.getElementById('view-monthly').classList.contains('hidden')) {
 				this.fetchAndRender();
 			}
 		});
 		document.addEventListener('settings:updated', () => {
-			this.updateStats(); // Recalculate balances with new rate/currency
-			this.render();
+			this.fetchAndRender(); // Re-fetch stats with new currency/rate
 		});
 	},
 
 	onViewLoaded() {
-		// Called when Monthly View is injected
 		this.bindTableEvents();
 		this.bindChartEvents();
 		this.fetchAndRender(); // Fetch new data
@@ -45,7 +41,6 @@ export const Transactions = {
 		const chartContainer = document.getElementById('chart-container');
 
 		if (toggleBtn && chartContainer) {
-			// Restore state
 			const isVisible = localStorage.getItem('parfin_chart_visible') !== 'false';
 			if (!isVisible) {
 				chartContainer.classList.add('hidden');
@@ -54,7 +49,6 @@ export const Transactions = {
 				toggleBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
 			}
 
-			// Prevent duplicate binding
 			if (toggleBtn.dataset.bound) return;
 
 			toggleBtn.addEventListener('click', () => {
@@ -75,7 +69,7 @@ export const Transactions = {
 
 	bindModalEvents() {
 		const form = document.getElementById('transaction-form');
-		if (!form || form.dataset.bound) return; // Prevent double binding
+		if (!form || form.dataset.bound) return;
 
 		const cancelBtn = document.getElementById('cancel-transaction-btn');
 		if (cancelBtn) {
@@ -97,18 +91,22 @@ export const Transactions = {
 	bindTableEvents() {
 		// Filter Elements
 		const filterPeriod = document.getElementById('filter-period');
-		const filterCustomDates = document.getElementById('filter-custom-dates');
 		const filterStartDate = document.getElementById('filter-start-date');
 		const filterEndDate = document.getElementById('filter-end-date');
 		const filterCategory = document.getElementById('filter-category');
 
-		// Only bind if filterPeriod exists and hasn't been bound
 		if (filterPeriod && !filterPeriod.dataset.bound) {
 			filterPeriod.value = state.filterParams.period || 'this_month';
 			filterPeriod.addEventListener('change', (e) => {
-				console.log('Filter changed:', e.target.value);
 				const period = e.target.value;
 				state.filterParams.period = period;
+
+				// Reset custom dates if switching away from custom
+				if (period !== 'custom') {
+					state.filterParams.start_date = null;
+					state.filterParams.end_date = null;
+				}
+
 				this.updateFilterUI();
 				this.fetchAndRender();
 			});
@@ -125,11 +123,9 @@ export const Transactions = {
 				option.textContent = getCategoryName(cat);
 				filterCategory.appendChild(option);
 			});
-			// Restore value
 			if (state.filterParams.category) filterCategory.value = state.filterParams.category;
 
 			filterCategory.addEventListener('change', (e) => {
-				console.log('Category changed:', e.target.value);
 				state.filterParams.category = e.target.value;
 				this.fetchAndRender();
 			});
@@ -137,10 +133,11 @@ export const Transactions = {
 		}
 
 		const dateChangeHandler = () => {
-			console.log('Custom dates changed');
-			state.filterParams.startDate = filterStartDate.value;
-			state.filterParams.endDate = filterEndDate.value;
-			this.fetchAndRender();
+			state.filterParams.start_date = filterStartDate.value;
+			state.filterParams.end_date = filterEndDate.value;
+			if (state.filterParams.start_date && state.filterParams.end_date) {
+				this.fetchAndRender();
+			}
 		};
 
 		if (filterStartDate && !filterStartDate.dataset.bound) {
@@ -152,7 +149,6 @@ export const Transactions = {
 			filterEndDate.dataset.bound = "true";
 		}
 
-		// Initial UI State
 		this.updateFilterUI();
 
 		// Sorting
@@ -167,10 +163,7 @@ export const Transactions = {
 	},
 
 	updateFilterUI() {
-		const filterPeriod = document.getElementById('filter-period');
 		const filterCustomDates = document.getElementById('filter-custom-dates');
-
-		// Check if elements exist before trying to access classList
 		if (!filterCustomDates) return;
 
 		if (state.filterParams.period === 'custom') {
@@ -181,64 +174,39 @@ export const Transactions = {
 	},
 
 	async fetchAndRender() {
-		await this.fetchTransactions();
-		this.render();
-		this.updateChart();
+		const params = this.computeParams();
+		// Add currency to params for Stats
+		const statsParams = { ...params, currency: state.currentLanguage === 'vi' ? 'VND' : 'USD' };
+
+		try {
+			const [transactions, stats] = await Promise.all([
+				Api.getTransactions(params),
+				Api.getStats(statsParams)
+			]);
+
+			state.transactions = transactions;
+			this.render();
+			this.renderStats(stats);
+		} catch (err) {
+			console.error('Error fetching data:', err);
+			const tbody = document.getElementById('transaction-list-body');
+			if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-danger text-center p-4">Error loading data.</td></tr>`;
+		}
 	},
 
+	computeParams() {
+		// Simply merge filters and sort params
+		const params = {
+			...state.filterParams,
+			...state.sortParams
+		};
+		// No date calculation here anymore. Passed as 'period' or 'start_date/end_date'
+		return params;
+	},
+
+	// Legacy method support if needed
 	async fetchTransactions() {
-		console.log('Fetching transactions with params:', state.filterParams);
-		try {
-			// Calculate Dates based on Period
-			const params = { ...state.filterParams };
-			const period = params.period || 'this_month';
-			const today = new Date();
-
-			const formatDate = (date) => {
-				const offset = date.getTimezoneOffset();
-				const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-				return localDate.toISOString().split('T')[0];
-			};
-
-			if (period === 'this_month') {
-				const start = new Date(today.getFullYear(), today.getMonth(), 1);
-				const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-				params.start_date = formatDate(start);
-				params.end_date = formatDate(end);
-			} else if (period === 'last_month') {
-				const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-				const end = new Date(today.getFullYear(), today.getMonth(), 0);
-				params.start_date = formatDate(start);
-				params.end_date = formatDate(end);
-			} else if (period === 'this_year') {
-				const start = new Date(today.getFullYear(), 0, 1);
-				const end = new Date(today.getFullYear(), 11, 31);
-				params.start_date = formatDate(start);
-				params.end_date = formatDate(end);
-			} else if (period === 'last_year') {
-				const start = new Date(today.getFullYear() - 1, 0, 1);
-				const end = new Date(today.getFullYear() - 1, 11, 31);
-				params.start_date = formatDate(start);
-				params.end_date = formatDate(end);
-			} else if (period === 'custom') {
-				params.start_date = params.startDate;
-				params.end_date = params.endDate;
-			}
-			// If 'all', no date params sent
-
-			console.log('Computed API params:', params);
-
-			const data = await Api.getTransactions(params);
-			state.transactions = data;
-
-			// Dispatch event for other modules (Stats, Charts)
-			document.dispatchEvent(new Event('transactions:updated'));
-			this.updateStats();
-		} catch (err) {
-			console.error(err);
-			const tbody = document.getElementById('transaction-list-body');
-			if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-danger text-center p-4">Error loading transactions.</td></tr>`;
-		}
+		this.fetchAndRender();
 	},
 
 	render() {
@@ -254,25 +222,7 @@ export const Transactions = {
 		}
 
 		const locale = state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
-		const sortParams = state.sortParams;
-		const { field, direction } = sortParams;
-
-		const sortedTransactions = [...transactions].sort((a, b) => {
-			if (!a || !b) return 0;
-			if (field === 'date') {
-				const dateA = new Date(a.date);
-				const dateB = new Date(b.date);
-				if (isNaN(dateA)) return 1;
-				if (isNaN(dateB)) return -1;
-				if (dateA < dateB) return direction === 'asc' ? -1 : 1;
-				if (dateA > dateB) return direction === 'asc' ? 1 : -1;
-				return direction === 'asc' ? ((a.id || 0) - (b.id || 0)) : ((b.id || 0) - (a.id || 0));
-			}
-			if (field === 'amount') {
-				return direction === 'asc' ? (a.amount - b.amount) : (b.amount - a.amount);
-			}
-			return 0;
-		});
+		const { field, direction } = state.sortParams;
 
 		// Update Sort Icons
 		document.querySelectorAll('th[data-sort]').forEach(th => {
@@ -287,7 +237,8 @@ export const Transactions = {
 			}
 		});
 
-		sortedTransactions.forEach(transaction => {
+		// Render Rows (Data is already sorted from backend)
+		transactions.forEach(transaction => {
 			const tr = document.createElement('tr');
 			tr.className = 'border-b text-sm hovering-row';
 			tr.style.borderColor = 'var(--bg-accent)';
@@ -316,7 +267,6 @@ export const Transactions = {
 			}
 
 			const sourceClass = transaction.source === 'bank' ? 'badge-info' : 'badge-success';
-			// Badge-like appearance for Source
 			const sourceBadge = `<span class="badge ${sourceClass} bg-opacity-10" style="font-size: 0.75rem;">${sourceName}</span>`;
 
 			tr.innerHTML = `
@@ -372,7 +322,6 @@ export const Transactions = {
 		const form = document.getElementById('transaction-form');
 		form.id.value = transaction.id;
 
-		// Conversion logic for display
 		let displayAmount = convertAmount(transaction.amount, transaction.currency);
 		if (state.currentLanguage === 'vi') {
 			displayAmount = Math.round(displayAmount);
@@ -386,7 +335,6 @@ export const Transactions = {
 			radio.checked = radio.value === transaction.type;
 		});
 
-		// Dataset for preservation
 		form.dataset.targetFund = transaction.fund || '';
 		form.dataset.targetSource = transaction.source || 'cash';
 
@@ -394,7 +342,6 @@ export const Transactions = {
 			form.dataset.targetDestCategory = transaction.destination_category || '';
 		}
 
-		// Update form state (rebuilds options) BEFORE setting values
 		this.updateFormState();
 
 		form.category.value = transaction.category;
@@ -419,29 +366,27 @@ export const Transactions = {
 
 		const categorySelect = form.querySelector('select[name="category"]');
 
-		// Grid Logic
 		const sourceSection = document.getElementById('source-section');
 		const destGroup = document.getElementById('destination-group');
 		const sourceTitle = document.getElementById('source-title');
 
 		if (type === 'allocation') {
 			sourceSection.classList.add('source-section');
-			sourceSection.classList.add('modal-section'); // Add border
+			sourceSection.classList.add('modal-section');
 			sourceTitle.classList.remove('hidden');
 			sourceTitle.textContent = t('source_from_title');
 
 			destGroup.classList.remove('hidden');
-			destGroup.classList.add('modal-section'); // Add border
+			destGroup.classList.add('modal-section');
 		} else {
 			sourceSection.classList.remove('source-section');
-			sourceSection.classList.remove('modal-section'); // Remove border
+			sourceSection.classList.remove('modal-section');
 			sourceTitle.textContent = t('source_details_title');
 
 			destGroup.classList.add('hidden');
-			destGroup.classList.remove('modal-section'); // Remove border
+			destGroup.classList.remove('modal-section');
 		}
 
-		// Categories
 		categorySelect.innerHTML = '';
 		let categories = [];
 		if (type === 'income') {
@@ -459,7 +404,6 @@ export const Transactions = {
 			categorySelect.appendChild(option);
 		});
 
-		// Use Fund
 		const useFundGroup = document.getElementById('use-fund-group');
 		if (type === 'expense') {
 			useFundGroup.classList.remove('hidden');
@@ -468,7 +412,6 @@ export const Transactions = {
 			form.fund.value = '';
 		}
 
-		// Dest Category
 		if (type === 'allocation') {
 			const destSelect = form.querySelector('select[name="destination_category"]');
 			const targetDest = form.dataset.targetDestCategory;
@@ -506,7 +449,7 @@ export const Transactions = {
 			if (result.ok) {
 				this.hideModal();
 				showToast(t(data.id ? 'toast_update_success' : 'toast_add_success'), 'success');
-				this.fetchAndRender(); // update list
+				this.fetchAndRender();
 			} else {
 				showToast(t('toast_error'), 'error');
 			}
@@ -531,186 +474,82 @@ export const Transactions = {
 	},
 
 	handleSort(field) {
+		// Update sort state only, api called in fetchAndRender
 		if (state.sortParams.field === field) {
-			state.sortParams.direction = state.sortParams.direction === 'asc' ? 'desc' : 'asc';
+			state.sortParams.order = state.sortParams.order === 'asc' ? 'desc' : 'asc';
+			// Sync with 'direction' for frontend legacy if needed
+			state.sortParams.direction = state.sortParams.order;
 		} else {
 			state.sortParams.field = field;
+			state.sortParams.order = 'desc';
 			state.sortParams.direction = 'desc';
 		}
-		this.render();
+		this.fetchAndRender();
 	},
 
-	updateStats() {
-		const transactions = state.transactions || [];
-
-		// Initialize balance objects
-		let total = { cash: 0, bank: 0 };
-		let saving = { cash: 0, bank: 0 };
-		let support = { cash: 0, bank: 0 };
-		let investment = { cash: 0, bank: 0 };
-		let together = { cash: 0, bank: 0 };
-
-		let monthlyIncome = 0;
-		let monthlyIncomeStats = { cash: 0, bank: 0 };
-		let monthlyExpense = 0;
-		let monthlyExpenseStats = { cash: 0, bank: 0 };
-
-		const getSource = (source) => source === 'bank' ? 'bank' : 'cash';
-
-		transactions.forEach(t => {
-			const source = getSource(t.source);
-			const amount = convertAmount(t.amount, t.currency || 'VND');
-
-			// --- Monthly Stats ---
-			if (t.type === 'income') {
-				monthlyIncome += amount;
-				monthlyIncomeStats[source] += amount;
-			} else if (t.type === 'expense') {
-				const allocationCategories = ['Saving', 'Support', 'Investment', 'Together'];
-				if (!allocationCategories.includes(t.category)) {
-					monthlyExpense += amount;
-					monthlyExpenseStats[source] += amount;
-				}
-			}
-
-			// --- Balance Logic ---
-			if (t.type === 'income') {
-				const fundCategories = ['Saving', 'Support', 'Investment', 'Together'];
-				if (fundCategories.includes(t.category)) {
-					if (t.category === 'Saving') saving[source] += amount;
-					else if (t.category === 'Support') support[source] += amount;
-					else if (t.category === 'Investment') investment[source] += amount;
-					else if (t.category === 'Together') together[source] += amount;
-				} else {
-					total[source] += amount;
-				}
-			} else if (t.type === 'expense') {
-				if (t.fund) {
-					const fundSource = source;
-					if (t.fund === 'Saving') saving[fundSource] -= amount;
-					else if (t.fund === 'Support') support[fundSource] -= amount;
-					else if (t.fund === 'Investment') investment[fundSource] -= amount;
-					else if (t.fund === 'Together') together[fundSource] -= amount;
-				} else {
-					total[source] -= amount;
-					// Legacy Allocation via Expense
-					if (t.category === 'Saving') saving[source] += amount;
-					else if (t.category === 'Support') support[source] += amount;
-					else if (t.category === 'Investment') investment[source] += amount;
-					else if (t.category === 'Together') together[source] += amount;
-				}
-			} else if (t.type === 'allocation') {
-				const sourceFundCat = ['Saving', 'Support', 'Investment', 'Together'];
-				if (sourceFundCat.includes(t.category)) {
-					if (t.category === 'Saving') saving[source] -= amount;
-					else if (t.category === 'Support') support[source] -= amount;
-					else if (t.category === 'Investment') investment[source] -= amount;
-					else if (t.category === 'Together') together[source] -= amount;
-				} else {
-					total[source] -= amount;
-				}
-
-				if (t.destination_category) {
-					const destSource = getSource(t.destination);
-					if (t.destination_category === 'Saving') saving[destSource] += amount;
-					else if (t.destination_category === 'Support') support[destSource] += amount;
-					else if (t.destination_category === 'Investment') investment[destSource] += amount;
-					else if (t.destination_category === 'Together') together[destSource] += amount;
-					else {
-						total[destSource] += amount;
-					}
-				}
-			}
-		});
-
-		// Investment Ledger Integration
-		const invActivity = { cash: 0, bank: 0 };
-		if (state.investments) {
-			state.investments.forEach(inv => {
-				const price = convertAmount(inv.price, 'VND');
-				const fee = convertAmount(inv.fee || 0, 'VND');
-				const tax = convertAmount(inv.tax || 0, 'VND');
-
-				let impact = 0;
-				if (inv.type === 'buy') impact = -1 * ((inv.quantity * price) + fee);
-				else if (inv.type === 'sell') impact = (inv.quantity * price) - fee - tax;
-				else if (inv.type === 'dividend') impact = (inv.quantity * price) - tax;
-
-				invActivity.bank += impact; // Assume bank
-			});
-		}
-		investment.bank += invActivity.bank;
-		investment.cash += invActivity.cash;
-
-		// Display Currency
+	renderStats(stats) {
+		const { balances, period_stats, chart_data } = stats;
 		const targetCurrency = state.currentLanguage === 'vi' ? 'VND' : 'USD';
 
-		// Helper to update text content if element exists
-		const updateText = (id, val, currency = targetCurrency) => {
+		// Helper to format without conversion (since backend already converted)
+		const fmtDirect = (val) => {
+			const locale = state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
+			return new Intl.NumberFormat(locale, { style: 'currency', currency: targetCurrency }).format(val);
+		};
+		const updateTextDirect = (id, val) => {
 			const el = document.getElementById(id);
-			if (el) el.textContent = formatCurrency(val, currency);
+			if (el) el.textContent = fmtDirect(val);
 		};
 
-		const totalAll = total.cash + total.bank + saving.cash + saving.bank + support.cash + support.bank + investment.cash + investment.bank + together.cash + together.bank;
+		// Use Grand Total from backend
+		updateTextDirect('total-balance', balances.grand_total);
+		updateTextDirect('balance-cash', balances.total.cash);
+		updateTextDirect('balance-bank', balances.total.bank);
 
-		updateText('total-balance', totalAll, targetCurrency);
-		updateText('balance-cash', total.cash, targetCurrency);
-		updateText('balance-bank', total.bank, targetCurrency);
+		// Period Stats
+		updateTextDirect('monthly-income', period_stats.income.total);
+		updateTextDirect('income-cash', period_stats.income.cash);
+		updateTextDirect('income-bank', period_stats.income.bank);
+		updateTextDirect('monthly-expense', period_stats.expense.total);
+		updateTextDirect('expense-cash', period_stats.expense.cash);
+		updateTextDirect('expense-bank', period_stats.expense.bank);
 
-		updateText('monthly-income', monthlyIncome, targetCurrency);
-		updateText('income-cash', monthlyIncomeStats.cash, targetCurrency);
-		updateText('income-bank', monthlyIncomeStats.bank, targetCurrency);
-		updateText('monthly-expense', monthlyExpense, targetCurrency);
-		updateText('expense-cash', monthlyExpenseStats.cash, targetCurrency);
-		updateText('expense-bank', monthlyExpenseStats.bank, targetCurrency);
+		// Funds
+		updateTextDirect('total-saving', balances.saving.cash + balances.saving.bank);
+		updateTextDirect('saving-cash', balances.saving.cash);
+		updateTextDirect('saving-bank', balances.saving.bank);
 
-		updateText('total-saving', saving.cash + saving.bank, targetCurrency);
-		updateText('saving-cash', saving.cash, targetCurrency);
-		updateText('saving-bank', saving.bank, targetCurrency);
+		updateTextDirect('total-support', balances.support.cash + balances.support.bank);
+		updateTextDirect('support-cash', balances.support.cash);
+		updateTextDirect('support-bank', balances.support.bank);
 
-		updateText('total-support', support.cash + support.bank, targetCurrency);
-		updateText('support-cash', support.cash, targetCurrency);
-		updateText('support-bank', support.bank, targetCurrency);
-
-		updateText('total-investment', investment.cash + investment.bank, targetCurrency);
-		updateText('investment-cash', investment.cash, targetCurrency);
-		updateText('investment-bank', investment.bank, targetCurrency);
+		updateTextDirect('total-investment', balances.investment.cash + balances.investment.bank);
+		updateTextDirect('investment-cash', balances.investment.cash);
+		updateTextDirect('investment-bank', balances.investment.bank);
 
 		if (document.getElementById('inv-available-cash')) {
-			updateText('inv-available-cash', investment.cash + investment.bank, targetCurrency);
+			updateTextDirect('inv-available-cash', balances.investment.cash + balances.investment.bank);
 		}
 
-		updateText('total-together', together.cash + together.bank, targetCurrency);
-		updateText('together-cash', together.cash, targetCurrency);
-		updateText('together-bank', together.bank, targetCurrency);
+		updateTextDirect('total-together', balances.together.cash + balances.together.bank);
+		updateTextDirect('together-cash', balances.together.cash);
+		updateTextDirect('together-bank', balances.together.bank);
 
-		state.balances = { total, saving, support, investment, together };
+		state.balances = balances;
+
+		this.renderChart(chart_data);
 	},
 
-	updateChart() {
+	renderChart(chartData) {
 		const ctx = document.getElementById('allocation-chart');
 		if (!ctx) return;
-
-		const expenses = (state.transactions || []).filter(t => t.type === 'expense');
-		const categoryData = {};
-
-		expenses.forEach(t => {
-			if (!categoryData[t.category]) categoryData[t.category] = { cash: 0, bank: 0 };
-			const source = t.source === 'bank' ? 'bank' : 'cash';
-			const amount = convertAmount(t.amount, t.currency || 'VND');
-			categoryData[t.category][source] += amount;
-		});
-
-		const labels = Object.keys(categoryData).map(cat => getCategoryName(cat));
-		const cashData = Object.values(categoryData).map(d => d.cash);
-		const bankData = Object.values(categoryData).map(d => d.bank);
 
 		if (state.chart) {
 			state.chart.destroy();
 		}
-
-		// Check if Chart is defined (global from script tag)
 		if (typeof Chart === 'undefined') return;
+
+		const labels = chartData.labels.map(cat => getCategoryName(cat));
 
 		state.chart = new Chart(ctx, {
 			type: 'bar',
@@ -719,12 +558,12 @@ export const Transactions = {
 				datasets: [
 					{
 						label: state.currentLanguage === 'vi' ? 'Tiền mặt' : 'Cash',
-						data: cashData,
+						data: chartData.datasets.cash,
 						backgroundColor: '#4BC0C0',
 					},
 					{
 						label: state.currentLanguage === 'vi' ? 'Ngân hàng' : 'Bank',
-						data: bankData,
+						data: chartData.datasets.bank,
 						backgroundColor: '#36A2EB',
 					}
 				]
@@ -741,7 +580,8 @@ export const Transactions = {
 								if (label) label += ': ';
 								if (context.parsed.y !== null) {
 									const targetCurrency = state.currentLanguage === 'vi' ? 'VND' : 'USD';
-									label += formatCurrency(context.parsed.y, targetCurrency);
+									const locale = state.currentLanguage === 'vi' ? 'vi-VN' : 'en-US';
+									return label + new Intl.NumberFormat(locale, { style: 'currency', currency: targetCurrency }).format(context.parsed.y);
 								}
 								return label;
 							}
