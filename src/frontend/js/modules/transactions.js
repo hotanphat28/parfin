@@ -551,20 +551,34 @@ export const Transactions = {
 
 		const labels = chartData.labels.map(cat => getCategoryName(cat));
 
+		const totals = chartData.datasets.cash.map((c, i) => c + chartData.datasets.bank[i]);
+
 		state.chart = new Chart(ctx, {
 			type: 'bar',
 			data: {
 				labels: labels,
 				datasets: [
 					{
+						label: t('chart_total'),
+						data: totals,
+						type: 'line',
+						borderColor: '#FFC90E',
+						backgroundColor: '#FFC90E',
+						borderWidth: 2,
+						fill: false,
+						order: 1
+					},
+					{
 						label: t('chart_cash'),
 						data: chartData.datasets.cash,
-						backgroundColor: '#4BC0C0',
+						backgroundColor: '#10b981',
+						order: 2
 					},
 					{
 						label: t('chart_bank'),
 						data: chartData.datasets.bank,
-						backgroundColor: '#36A2EB',
+						backgroundColor: '#3b82f6',
+						order: 3
 					}
 				]
 			},
