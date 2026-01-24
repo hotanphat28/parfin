@@ -115,7 +115,7 @@ export const Transactions = {
 
 		// Populate Categories
 		if (filterCategory && !filterCategory.dataset.populated) {
-			const categories = ['Salary', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Debt', 'Personal', 'Saving', 'Support', 'Investment', 'Other'];
+			const categories = ['Salary', 'Rent', 'Utilities', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Debt', 'Personal', 'Saving', 'Support', 'Investment', 'Other'];
 			filterCategory.innerHTML = '<option value="all" data-i18n="filter_all_categories">All Categories</option>';
 			categories.forEach(cat => {
 				const option = document.createElement('option');
@@ -394,7 +394,7 @@ export const Transactions = {
 		} else if (type === 'allocation') {
 			categories = ['Salary', 'Other', 'Saving', 'Support', 'Investment', 'Together'];
 		} else {
-			categories = ['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Debt', 'Personal', 'Other'];
+			categories = ['Rent', 'Utilities', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Debt', 'Personal', 'Other'];
 		}
 
 		categories.forEach(cat => {
@@ -557,12 +557,12 @@ export const Transactions = {
 				labels: labels,
 				datasets: [
 					{
-						label: state.currentLanguage === 'vi' ? 'Tiền mặt' : 'Cash',
+						label: t('chart_cash'),
 						data: chartData.datasets.cash,
 						backgroundColor: '#4BC0C0',
 					},
 					{
-						label: state.currentLanguage === 'vi' ? 'Ngân hàng' : 'Bank',
+						label: t('chart_bank'),
 						data: chartData.datasets.bank,
 						backgroundColor: '#36A2EB',
 					}

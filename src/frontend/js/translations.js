@@ -80,7 +80,9 @@ export const translations = {
 		category_food: "Food & Dining",
 		category_transport: "Transportation",
 		category_shopping: "Shopping",
-		category_bills: "Bills & Utilities",
+		category_bills: "Bills",
+		category_utilities: "Utilities",
+		category_rent: "Rent",
 		category_entertainment: "Entertainment",
 		category_health: "Health & Fitness",
 		category_health: "Health & Fitness",
@@ -189,7 +191,40 @@ export const translations = {
 		select_destination_category: "Select Destination Category",
 		destination_details_title: "To (Destination)",
 		fixed_item_desc_placeholder: "Description (e.g., Monthly Rent)",
-		total_amount_label: "Total Amount"
+		total_amount_label: "Total Amount",
+		// User Management
+		user_management_title: "User Management",
+		user_management_desc: "Manage system users and their roles.",
+		add_user_btn: "Add User",
+		table_user: "User",
+		table_role: "Role",
+		table_actions: "Actions",
+		create_user_title: "Create New User",
+		role_label: "Role",
+		role_user: "User",
+		role_admin: "Admin",
+		create_user_btn: "Create User",
+		// Confirmation Modal
+		confirm_title: "Confirm Action",
+		confirm_message: "Are you sure you want to proceed?",
+		confirm_delete_user_title: "Delete User",
+		confirm_delete_user_msg: "Are you sure you want to permanently delete this user? This action cannot be undone.",
+		confirm_btn: "Confirm",
+		// Toasts
+		toast_fill_fields: "Please fill in all fields",
+		toast_user_created: "User created successfully",
+		toast_create_user_fail: "Failed to create user",
+		toast_create_user_error: "Error creating user",
+		toast_user_deleted: "User deleted",
+		toast_delete_user_fail: "Failed to delete user",
+		toast_delete_user_error: "Error deleting user",
+		toast_load_users_fail: "Failed to load users",
+		// Chart
+		chart_cash: "Cash",
+		chart_bank: "Bank",
+		// Fixed Items
+		confirm_generate_fixed: "Generate transactions for this month?",
+		toast_generated_count: "Generated {count} transactions"
 	},
 	vi: {
 		app_title: "ParFin",
@@ -271,7 +306,9 @@ export const translations = {
 		category_food: "Ăn uống",
 		category_transport: "Di chuyển",
 		category_shopping: "Mua sắm",
-		category_bills: "Hóa đơn & Tiện ích",
+		category_bills: "Hóa đơn",
+		category_utilities: "Tiện ích",
+		category_rent: "Thuê nhà",
 		category_entertainment: "Giải trí",
 		category_health: "Sức khỏe",
 		category_health: "Sức khỏe",
@@ -380,6 +417,39 @@ export const translations = {
 		select_destination_category: "Chọn Danh mục Đích",
 		destination_details_title: "Đến (Đích)",
 		fixed_item_desc_placeholder: "Mô tả (ví dụ: Tiền thuê nhà)",
-		total_amount_label: "Tổng số tiền"
-	}
+		total_amount_label: "Tổng số tiền",
+		// User Management
+		user_management_title: "Quản lý người dùng",
+		user_management_desc: "Quản lý người dùng và phân quyền hệ thống.",
+		add_user_btn: "Thêm người dùng",
+		table_user: "Người dùng",
+		table_role: "Vai trò",
+		table_actions: "Hành động",
+		create_user_title: "Tạo người dùng mới",
+		role_label: "Vai trò",
+		role_user: "Người dùng",
+		role_admin: "Quản trị viên",
+		create_user_btn: "Tạo người dùng",
+		// Confirmation Modal
+		confirm_title: "Xác nhận hành động",
+		confirm_message: "Bạn có chắc chắn muốn tiếp tục?",
+		confirm_delete_user_title: "Xóa người dùng",
+		confirm_delete_user_msg: "Bạn có chắc chắn muốn xóa vĩnh viễn người dùng này? Hành động này không thể hoàn tác.",
+		confirm_btn: "Xác nhận",
+		// Toasts
+		toast_fill_fields: "Vui lòng điền đầy đủ thông tin",
+		toast_user_created: "Tạo người dùng thành công",
+		toast_create_user_fail: "Tạo người dùng thất bại",
+		toast_create_user_error: "Lỗi khi tạo người dùng",
+		toast_user_deleted: "Đã xóa người dùng",
+		toast_delete_user_fail: "Xóa người dùng thất bại",
+		toast_delete_user_error: "Lỗi khi xóa người dùng",
+		toast_load_users_fail: "Lỗi khi tải danh sách người dùng",
+		// Chart
+		chart_cash: "Tiền mặt",
+		chart_bank: "Ngân hàng",
+		// Fixed Items
+		confirm_generate_fixed: "Tạo các giao dịch cho tháng này?",
+		toast_generated_count: "Đã tạo {count} giao dịch"
+	},
 };

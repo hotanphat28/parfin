@@ -95,7 +95,7 @@ export const FixedItems = {
                 <td class="p-4">${getCategoryName(item.category)}</td>
                 <td class="p-4">${item.description}</td>
                 <td class="p-4 text-right font-bold">${formatCurrency(item.amount, item.currency || 'VND')}</td>
-                <td class="p-4 capitalize">${item.type}</td>
+                <td class="p-4 capitalize">${t('type_' + item.type)}</td>
                 <td class="p-4 text-right">
                     <button class="btn-icon delete-btn"><i class="fa-solid fa-trash"></i></button>
                 </td>
@@ -164,7 +164,7 @@ export const FixedItems = {
 		} else if (type === 'allocation') {
 			categories = ['Salary', 'Other', 'Saving', 'Support', 'Investment', 'Together'];
 		} else {
-			categories = ['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Debt', 'Personal', 'Other'];
+			categories = ['Rent', 'Utilities', 'Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Debt', 'Personal', 'Other'];
 		}
 
 		categories.forEach(cat => {
@@ -227,12 +227,13 @@ export const FixedItems = {
 	},
 
 	async generateTransactions() {
-		if (!confirm('Generate transactions for this month?')) return;
+		if (!confirm(t('confirm_generate_fixed'))) return;
 		const date = new Date().toISOString().slice(0, 10);
 		try {
 			const res = await Api.generateFixedTransactions({ date, user_id: 1 });
 			if (res.ok && res.data.success) {
-				showToast(`Generated ${res.data.count} transactions`, 'success');
+				const msg = t('toast_generated_count').replace('{count}', res.data.count);
+				showToast(msg, 'success');
 				document.getElementById('fixed-items-modal').classList.add('hidden');
 				document.dispatchEvent(new Event('transactions:updated'));
 			} else {

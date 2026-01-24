@@ -40,6 +40,8 @@ export function getCategoryIcon(category) {
 		'Transport': '🚗',
 		'Shopping': '🛍️',
 		'Bills': '💡',
+		'Rent': '🏠',
+		'Utilities': '⚡',
 		'Entertainment': '🎬',
 		'Health': '💊',
 		'Salary': '💰',

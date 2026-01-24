@@ -97,7 +97,7 @@ export const Investments = {
 				? (price * tx.quantity) + fee + tax
 				: (price * tx.quantity) - fee - tax;
 
-			let typeLabel = tx.type.toUpperCase();
+			let typeLabel = t(`inv_type_${tx.type}`);
 			let color = 'text-primary';
 			if (tx.type === 'buy') color = 'text-danger';
 			if (tx.type === 'sell' || tx.type === 'dividend') color = 'text-success';
@@ -108,9 +108,8 @@ export const Investments = {
                 </td>
                 <td class="p-4">${new Date(tx.date).toLocaleDateString()}</td>
                 <td class="p-4">
-                    <div class="flex items-center gap-sm">
                          <span class="text-lg w-8 h-8 flex items-center justify-center rounded-full bg-secondary bg-opacity-50">💰</span>
-                         <span class="capitalize font-medium">${tx.asset_type || 'stock'}</span>
+                         <span class="capitalize font-medium">${t(`asset_type_${tx.asset_type}`)}</span>
                     </div>
                 </td>
                 <td class="p-4 font-bold">${tx.symbol}</td>
@@ -165,7 +164,7 @@ export const Investments = {
                 <td class="p-4">
                     <div class="flex items-center gap-sm">
                          <span class="text-lg w-8 h-8 flex items-center justify-center rounded-full bg-secondary bg-opacity-50">📈</span>
-                         <span class="capitalize font-medium">${h.asset_type}</span>
+                         <span class="capitalize font-medium">${t(`asset_type_${h.asset_type}`)}</span>
                     </div>
                 </td>
                 <td class="p-4 font-bold">${h.symbol}</td>

@@ -31,6 +31,22 @@ def generate_mock_data():
     print(f"Generating data for User ID: {user_id}")
 
     # ==========================================
+    # 0. Cleanup Existing Mock Data
+    # ==========================================
+    print("Cleaning up existing mock data...")
+    # Delete transactions with "Mock" description
+    c.execute("DELETE FROM transactions WHERE description LIKE 'Mock %'")
+    
+    # Delete fixed items with "Mock" description or specific legacy mock descriptions
+    c.execute("DELETE FROM fixed_items WHERE description LIKE 'Mock %' OR description IN ('Monthly House Rent', 'Fiber Internet', 'Main Job Salary', 'Streaming Subscription')")
+    
+    # Delete investment transactions with "Mock Investment" note
+    c.execute("DELETE FROM investment_transactions WHERE notes = 'Mock Investment'")
+    
+    conn.commit()
+    print("Existing mock data cleared.")
+
+    # ==========================================
     # 1. Generate Transactions (Income/Expense)
     # ==========================================
     categories = ['Food', 'Salary', 'Rent', 'Transport', 'Entertainment', 'Utilities', 'Shopping', 'Health']
@@ -55,7 +71,7 @@ def generate_mock_data():
             
             # Weight 'expense' more heavily than 'income' usually, but random is fine
             if trans_type == 'income':
-                category = 'Salary' if random.random() > 0.3 else 'Other Income'
+                category = 'Salary' if random.random() > 0.3 else 'Other'
                 amount = random.randint(1000000, 50000000) # 1M to 50M VND
             else:
                 category = random.choice([c for c in categories if c != 'Salary'])
@@ -79,11 +95,11 @@ def generate_mock_data():
     # Fixed items are typically recurring setup. We'll add a few if they don't exist much.
     # We will just add a set of common fixed expenses/incomes.
     fixed_items_data = [
-        {'amount': 5000000, 'type': 'expense', 'category': 'Rent', 'description': 'Monthly House Rent', 'source': 'bank'},
-        {'amount': 300000, 'type': 'expense', 'category': 'Internet', 'description': 'Fiber Internet', 'source': 'bank'},
-        {'amount': 20000000, 'type': 'income', 'category': 'Salary', 'description': 'Main Job Salary', 'source': 'bank'},
-        {'amount': 100000, 'type': 'expense', 'category': 'Netflix', 'description': 'Streaming Subscription', 'source': 'cash'},
-    ]
+        {'amount': 5000000, 'type': 'expense', 'category': 'Rent', 'description': 'Mock Monthly House Rent', 'source': 'bank'},
+        {'amount': 300000, 'type': 'expense', 'category': 'Utilities', 'description': 'Mock Fiber Internet', 'source': 'bank'},
+        {'amount': 20000000, 'type': 'income', 'category': 'Salary', 'description': 'Mock Main Job Salary', 'source': 'bank'},
+        {'amount': 100000, 'type': 'expense', 'category': 'Entertainment', 'description': 'Mock Streaming Subscription', 'source': 'cash'},
+    ] 
     
     fixed_items_count = 0
     for item in fixed_items_data:

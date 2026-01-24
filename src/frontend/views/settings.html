@@ -40,12 +40,13 @@
 			<div class="card h-full">
 				<div class="flex justify-between items-center mb-6 pb-2">
 					<div>
-						<h3 class="text-lg font-bold">User Management</h3>
-						<p class="text-xs text-secondary mt-1">Manage system users and their roles.</p>
+						<h3 class="text-lg font-bold" data-i18n="user_management_title">User Management</h3>
+						<p class="text-xs text-secondary mt-1" data-i18n="user_management_desc">Manage system users and
+							their roles.</p>
 					</div>
 					<button id="show-add-user-btn"
 						class="btn btn-primary text-sm flex items-center gap-xs shadow-sm px-4 py-2">
-						<span class="mr-2 text-xl font-light">+</span> Add User
+						<span class="mr-2 text-xl font-light">+</span> <span data-i18n="add_user_btn">Add User</span>
 					</button>
 				</div>
 
@@ -57,9 +58,9 @@
 								<th class="py-4 pl-4 w-10">
 									<input type="checkbox" class="accent-primary cursor-pointer w-4 h-4">
 								</th>
-								<th class="py-4 pl-4 pr-8 font-semibold w-50">User</th>
-								<th class="py-4 px-4 font-semibold w-1/4">Role</th>
-								<th class="py-4 pl-8 pr-4 font-semibold w-1/4">Actions</th>
+								<th class="py-4 pl-4 pr-8 font-semibold w-50" data-i18n="table_user">User</th>
+								<th class="py-4 px-4 font-semibold w-1/4" data-i18n="table_role">Role</th>
+								<th class="py-4 pl-8 pr-4 font-semibold w-1/4" data-i18n="table_actions">Actions</th>
 							</tr>
 						</thead>
 						<tbody id="user-list-body" class="text-sm">

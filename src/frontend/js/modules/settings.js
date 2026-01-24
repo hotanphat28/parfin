@@ -225,7 +225,7 @@ export const Settings = {
 			});
 		} catch (e) {
 			console.error('Failed to load users', e);
-			showToast('Failed to load users', 'error');
+			showToast(t('toast_load_users_fail'), 'error');
 		}
 	},
 
@@ -237,14 +237,14 @@ export const Settings = {
 
 		// Basic client-side validation
 		if (!data.username || !data.password) {
-			showToast('Please fill in all fields', 'error');
+			showToast(t('toast_fill_fields'), 'error');
 			return;
 		}
 
 		try {
 			const response = await Api.createUser(data);
 			if (response.ok || response.success) {
-				showToast('User created successfully', 'success');
+				showToast(t('toast_user_created'), 'success');
 				form.reset();
 				// Toggle visibility back
 				const addUserModal = document.getElementById('add-user-modal');
@@ -252,10 +252,10 @@ export const Settings = {
 
 				this.loadUsers();
 			} else {
-				showToast(response.error || 'Failed to create user', 'error');
+				showToast(response.error || t('toast_create_user_fail'), 'error');
 			}
 		} catch (e) {
-			showToast('Error creating user', 'error');
+			showToast(t('toast_create_user_error'), 'error');
 		}
 	},
 
@@ -269,14 +269,14 @@ export const Settings = {
 
 		if (!modal) {
 			// Fallback
-			if (!confirm('Delete this user?')) return;
+			if (!confirm(t('confirm_delete_user_msg'))) return;
 			this.performDeleteUser(id);
 			return;
 		}
 
 		// Setup Modal
-		title.textContent = 'Delete User';
-		msg.textContent = 'Are you sure you want to permanently delete this user? This action cannot be undone.';
+		title.textContent = t('confirm_delete_user_title');
+		msg.textContent = t('confirm_delete_user_msg');
 		modal.classList.remove('hidden');
 
 		// Cleanup old listeners
@@ -300,13 +300,13 @@ export const Settings = {
 		try {
 			const ok = await Api.deleteUser(id);
 			if (ok) {
-				showToast('User deleted', 'success');
+				showToast(t('toast_user_deleted'), 'success');
 				this.loadUsers();
 			} else {
-				showToast('Failed to delete user', 'error');
+				showToast(t('toast_delete_user_fail'), 'error');
 			}
 		} catch (e) {
-			showToast('Error deleting user', 'error');
+			showToast(t('toast_delete_user_error'), 'error');
 		}
 	}
 };
