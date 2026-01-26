@@ -141,6 +141,21 @@ body {
 	color: #059669;
 }
 
+/* Chart Animation */
+.chart-container-anim {
+	height: 300px;
+	position: relative;
+	transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+	overflow: hidden;
+	opacity: 1;
+}
+
+.chart-collapsed {
+	height: 0 !important;
+	opacity: 0 !important;
+	margin-bottom: 0 !important;
+}
+
 /* Layout */
 #app {
 	width: 100%;

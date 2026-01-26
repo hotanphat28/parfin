@@ -43,7 +43,7 @@ export const Transactions = {
 		if (toggleBtn && chartContainer) {
 			const isVisible = localStorage.getItem('parfin_chart_visible') !== 'false';
 			if (!isVisible) {
-				chartContainer.classList.add('hidden');
+				chartContainer.classList.add('chart-collapsed');
 				toggleBtn.innerHTML = '<i class="fa-solid fa-lock"></i>';
 			} else {
 				toggleBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
@@ -52,13 +52,13 @@ export const Transactions = {
 			if (toggleBtn.dataset.bound) return;
 
 			toggleBtn.addEventListener('click', () => {
-				const isHidden = chartContainer.classList.contains('hidden');
+				const isHidden = chartContainer.classList.contains('chart-collapsed');
 				if (isHidden) {
-					chartContainer.classList.remove('hidden');
+					chartContainer.classList.remove('chart-collapsed');
 					toggleBtn.innerHTML = '<i class="fa-regular fa-eye"></i>';
 					this.updateChart();
 				} else {
-					chartContainer.classList.add('hidden');
+					chartContainer.classList.add('chart-collapsed');
 					toggleBtn.innerHTML = '<i class="fa-solid fa-lock"></i>';
 				}
 				localStorage.setItem('parfin_chart_visible', !isHidden);
