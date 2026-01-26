@@ -222,6 +222,7 @@ export const translations = {
 		// Chart
 		chart_cash: "Cash",
 		chart_bank: "Bank",
+		chart_total: "Total",
 		// Fixed Items
 		confirm_generate_fixed: "Generate transactions for this month?",
 		toast_generated_count: "Generated {count} transactions"
@@ -448,6 +449,7 @@ export const translations = {
 		// Chart
 		chart_cash: "Tiền mặt",
 		chart_bank: "Ngân hàng",
+		chart_total: "Tổng",
 		// Fixed Items
 		confirm_generate_fixed: "Tạo các giao dịch cho tháng này?",
 		toast_generated_count: "Đã tạo {count} giao dịch"
