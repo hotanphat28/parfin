@@ -1,54 +1,41 @@
 :root {
     /* Brand Palette */
-    --color-white: #FFFFFF;
-    --color-light: #F4F4F4;
-    --color-light-gray: #D6D6D6;
-    --color-dark-gray: #646464;
-    --color-dark: #282828;
+    --color-white: #F4F4F4;
+    --color-gray: #646464;
     --color-black: #101010;
     --color-golden: #FFC90E;
 
-    /* Light Mode (Default) */
-    --bg-primary: var(--color-white);
-    --bg-secondary: var(--color-light);
-    --bg-accent: var(--color-light-gray);
+    /* Base Colors - Futuristic Dark Theme (Default) */
+    --bg-primary: var(--color-black);
+    --bg-secondary: #1a1a1a;
 
-    --text-primary: var(--color-black);
-    --text-secondary: var(--color-dark-gray);
-    --text-accent: #B45309;
-    /* Dark Amber for readability on white */
+    /* Text Colors */
+    --text-primary: var(--color-white);
+    --text-secondary: #a3a3a3;
+    /* Lightened from #646464 for better contrast on dark */
+    --text-accent: var(--color-golden);
     --text-on-primary: var(--color-black);
-    /* Black text on Golden button */
-    --text-warning-readable: #B45309;
-    /* Dark Amber */
+    /* Text on Golden button */
 
+    /* Brand Primary / Action */
     --primary: var(--color-golden);
     --primary-hover: #e5b300;
-    /* Slightly darker gold for hover */
 
+    /* Semantic Colors */
     --success: #10b981;
     --danger: #ef4444;
     --warning: var(--color-golden);
+    --info: #3b82f6;
 
-    /* Text Colors for Contrast */
-    --text-success: #059669;
-    /* Darker Emerald for text on white */
-    --text-danger: #dc2626;
-    /* Darker Red for text on white */
+    /* Glassmorphism Variables (Dark Default) */
+    --glass-bg: rgba(20, 20, 20, 0.65);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    --glass-blur: blur(16px);
 
-    /* Semantic Badge Colors */
-    --badge-info-bg: rgba(59, 130, 246, 0.1);
-    --badge-info-text: #3b82f6;
-    --badge-info-border: rgba(59, 130, 246, 0.2);
-
-    --badge-warning-bg: rgba(245, 158, 11, 0.1);
-    --badge-warning-text: #B45309;
-    /* Dark Amber */
-    --badge-warning-border: rgba(245, 158, 11, 0.2);
-
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, var(--color-golden) 0%, #FDB931 100%);
-    --gradient-surface: linear-gradient(145deg, #ffffff 0%, #f4f4f4 100%);
+    /* Enhanced Glass for interactive/hover states */
+    --glass-bg-hover: rgba(30, 30, 30, 0.75);
+    --glass-border-hover: 1px solid rgba(255, 201, 14, 0.3);
 
     /* Spacing */
     --space-xs: 0.25rem;
@@ -57,83 +44,65 @@
     --space-lg: 1.5rem;
     --space-xl: 2rem;
 
-    /* Border Radius - Smooth & Consistent */
+    /* Border Radius */
     --radius-sm: 0.5rem;
-    /* 8px - Inputs, Buttons */
-    --radius-md: 0.75rem;
-    /* 12px - Cards */
-    --radius-lg: 1rem;
-    /* 16px - Modals/Large Containers */
+    --radius-md: 1rem;
+    --radius-lg: 1.5rem;
     --radius-full: 9999px;
-    /* Pills */
-
-    /* Shadows - Light actions usually need softer shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-glow: 0 0 20px rgba(255, 201, 14, 0.4);
-
-    /* Semantic Colors */
-    --card-border: rgba(0, 0, 0, 0.05);
-    --card-border-hover: rgba(255, 201, 14, 0.5);
-    --item-hover-bg: rgba(0, 0, 0, 0.03);
 
     /* Typography */
     --font-sans: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    --font-mono: 'Space Mono', monospace;
+
+    /* Shadows & Glows */
+    --glow-primary: 0 0 15px rgba(255, 201, 14, 0.3);
+    --glow-text: 0 0 10px rgba(255, 201, 14, 0.2);
+
+    /* Semantic Text Colors */
+    --text-success: #34d399;
+    /* Emerald 400 - Readable on Dark */
+    --text-danger: #f87171;
+    /* Red 400 - Readable on Dark */
+    --text-warning: #fbbf24;
+    /* Amber 400 - Readable on Dark */
+    --text-info: #60a5fa;
+    /* Blue 400 - Readable on Dark */
+
+    /* Gradient Surface */
+    --gradient-primary: linear-gradient(135deg, var(--color-golden) 0%, #FDB931 100%);
 }
 
-/* Dark Mode Override - Explicit Attribute */
-[data-theme="dark"] {
-    --bg-primary: var(--color-black);
-    --bg-secondary: var(--color-dark);
-    --bg-accent: var(--color-dark-gray);
+/* Light Mode Overrides */
+[data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
 
-    --text-primary: var(--color-white);
-    --text-secondary: var(--color-light-gray);
+    --text-primary: var(--color-black);
+    --text-secondary: #4b5563;
+    --text-accent: #b45309;
+    /* Darkened from #d97706 for better visibility on white (Amber 700) */
 
-    --gradient-surface: linear-gradient(145deg, var(--color-dark) 0%, var(--color-black) 100%);
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+    /* Semantic Text Colors - Darker for Light Mode */
+    --text-success: #059669;
+    /* Emerald 600 */
+    --text-danger: #dc2626;
+    /* Red 600 */
+    --text-warning: #b45309;
+    /* Amber 700 - Better contrast */
+    --text-info: #2563eb;
+    /* Blue 600 */
 
-    --card-border: rgba(255, 255, 255, 0.05);
-    --card-border-hover: rgba(255, 201, 14, 0.3);
-    --item-hover-bg: rgba(255, 255, 255, 0.05);
+    /* Glassmorphism - Light Frost */
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --glass-border: 1px solid rgba(0, 0, 0, 0.05);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
 
-    /* Dark Mode Contrast Overrides */
-    --text-accent: var(--color-golden);
-    /* Bright Gold is readable on Dark */
-    --text-warning-readable: var(--color-golden);
+    --glass-bg-hover: rgba(255, 255, 255, 0.9);
+    --glass-border-hover: 1px solid rgba(255, 201, 14, 0.5);
 
-    --badge-info-text: #60a5fa;
-    /* Lighter blue for dark mode */
-    --badge-warning-text: var(--color-golden);
-}
+    --glow-primary: 0 0 10px rgba(255, 201, 14, 0.4);
+    --glow-text: none;
 
-/* Dark Mode Override - System Preference (when not overridden to light) */
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-        --bg-primary: var(--color-black);
-        --bg-secondary: var(--color-dark);
-        --bg-accent: var(--color-dark-gray);
-
-        --text-primary: var(--color-white);
-        --text-secondary: var(--color-light-gray);
-
-        --gradient-surface: linear-gradient(145deg, var(--color-dark) 0%, var(--color-black) 100%);
-        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
-        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
-
-        --card-border: rgba(255, 255, 255, 0.05);
-        --card-border-hover: rgba(255, 201, 14, 0.3);
-        --item-hover-bg: rgba(255, 255, 255, 0.05);
-
-        /* Dark Mode Contrast Overrides */
-        --text-accent: var(--color-golden);
-        --text-warning-readable: var(--color-golden);
-
-        --badge-info-text: #60a5fa;
-        --badge-warning-text: var(--color-golden);
-    }
+    /* Adjust text colors for contrast */
+    --text-on-primary: #000;
 }
