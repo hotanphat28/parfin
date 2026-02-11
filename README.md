@@ -151,4 +151,4 @@ This product was created with **Antigravity** and **Google Gemini 3 Pro**.
 
 ## License
 
-This product is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+This product is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
