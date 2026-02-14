@@ -1,0 +1,47 @@
+/* Base & Reset */
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	scrollbar-width: thin;
+	scrollbar-color: var(--color-gray) transparent;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+	width: 6px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background-color: var(--color-gray);
+	border-radius: 20px;
+}
+
+body {
+	font-family: var(--font-sans);
+	background-color: var(--bg-primary);
+	color: var(--text-primary);
+	line-height: 1.6;
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+}
+
+/* Dark Mode Background (Default) */
+body {
+	background-image:
+		radial-gradient(circle at 15% 50%, rgba(255, 201, 14, 0.03) 0%, transparent 25%),
+		radial-gradient(circle at 85% 30%, rgba(255, 255, 255, 0.02) 0%, transparent 25%);
+	background-attachment: fixed;
+}
+
+/* Light Mode Background */
+[data-theme="light"] body {
+	background-image:
+		radial-gradient(circle at 15% 50%, rgba(255, 201, 14, 0.1) 0%, transparent 25%),
+		radial-gradient(circle at 85% 30%, rgba(0, 0, 0, 0.02) 0%, transparent 25%);
+}

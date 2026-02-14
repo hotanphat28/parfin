@@ -12,10 +12,8 @@
     /* Text Colors */
     --text-primary: var(--color-white);
     --text-secondary: #a3a3a3;
-    /* Lightened from #646464 for better contrast on dark */
     --text-accent: var(--color-golden);
     --text-on-primary: var(--color-black);
-    /* Text on Golden button */
 
     /* Brand Primary / Action */
     --primary: var(--color-golden);
@@ -60,13 +58,9 @@
 
     /* Semantic Text Colors */
     --text-success: #34d399;
-    /* Emerald 400 - Readable on Dark */
     --text-danger: #f87171;
-    /* Red 400 - Readable on Dark */
     --text-warning: #fbbf24;
-    /* Amber 400 - Readable on Dark */
     --text-info: #60a5fa;
-    /* Blue 400 - Readable on Dark */
 
     /* Gradient Surface */
     --gradient-primary: linear-gradient(135deg, var(--color-golden) 0%, #FDB931 100%);
@@ -80,17 +74,12 @@
     --text-primary: var(--color-black);
     --text-secondary: #4b5563;
     --text-accent: #b45309;
-    /* Darkened from #d97706 for better visibility on white (Amber 700) */
 
     /* Semantic Text Colors - Darker for Light Mode */
     --text-success: #059669;
-    /* Emerald 600 */
     --text-danger: #dc2626;
-    /* Red 600 */
     --text-warning: #b45309;
-    /* Amber 700 - Better contrast */
     --text-info: #2563eb;
-    /* Blue 600 */
 
     /* Glassmorphism - Light Frost */
     --glass-bg: rgba(255, 255, 255, 0.75);

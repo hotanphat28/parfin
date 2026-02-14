@@ -960,7 +960,7 @@ const App = {
                 <td class="p-4">${new Date(t.date).toLocaleDateString(locale)}</td>
                 <td class="p-4">
                     <div class="flex items-center gap-sm">
-                        <span>${this.getCategoryIcon(t.category)}</span>
+                        <span><i class="${this.getCategoryIcon(t.category)}"></i></span>
                         <span>${categoryName}</span>
                     </div>
                 </td>
@@ -1303,23 +1303,25 @@ const App = {
 
 	getCategoryIcon(category) {
 		const icons = {
-			'Food': '🍜',
-			'Transport': '🚗',
-			'Shopping': '🛍️',
-			'Bills': '💡',
-			'Entertainment': '🎬',
-			'Health': '💊',
-			'Salary': '💰',
-			'Transfer': '↔️',
-			'Investment': '📈',
-			'Saving': '🐖',
-			'Debt': '💸',
-			'Support': '🤝',
-			'Personal': '👤',
-			'Together': '👩‍❤️‍👨',
-			'Other': '📝'
+			'Food': 'fa-solid fa-utensils',
+			'Transport': 'fa-solid fa-car',
+			'Shopping': 'fa-solid fa-bag-shopping',
+			'Bills': 'fa-solid fa-file-invoice-dollar',
+			'Rent': 'fa-solid fa-house',
+			'Utilities': 'fa-solid fa-bolt',
+			'Entertainment': 'fa-solid fa-film',
+			'Health': 'fa-solid fa-notes-medical',
+			'Salary': 'fa-solid fa-sack-dollar',
+			'Transfer': 'fa-solid fa-right-left',
+			'Investment': 'fa-solid fa-chart-line',
+			'Saving': 'fa-solid fa-piggy-bank',
+			'Debt': 'fa-solid fa-credit-card',
+			'Support': 'fa-solid fa-hand-holding-heart',
+			'Personal': 'fa-solid fa-user',
+			'Together': 'fa-solid fa-users',
+			'Other': 'fa-solid fa-pen-to-square'
 		};
-		return icons[category] || '📝';
+		return icons[category] || 'fa-solid fa-pen-to-square';
 	},
 
 	getCategoryName(categoryKey) {
@@ -1462,7 +1464,7 @@ const App = {
 			tr.innerHTML = `
                 <td class="p-4">
                     <div class="flex items-center gap-sm">
-                        <span>${this.getCategoryIcon(item.category)}</span>
+                        <span><i class="${this.getCategoryIcon(item.category)}"></i></span>
                         <span>${categoryName}</span>
                     </div>
                 </td>

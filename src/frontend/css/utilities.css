@@ -1,0 +1,221 @@
+/* Utilities */
+.hidden {
+	display: none !important;
+}
+
+.flex {
+	display: flex;
+}
+
+.flex-col {
+	flex-direction: column;
+}
+
+.items-center {
+	align-items: center;
+}
+
+.justify-center {
+	justify-content: center;
+}
+
+.justify-between {
+	justify-content: space-between;
+}
+
+.justify-end {
+	justify-content: flex-end;
+}
+
+/* Gap Utilities */
+.gap-xs {
+	gap: var(--space-xs);
+}
+
+.gap-sm {
+	gap: var(--space-sm);
+}
+
+.gap-md {
+	gap: var(--space-md);
+}
+
+.gap-lg {
+	gap: var(--space-lg);
+}
+
+.gap-xl {
+	gap: var(--space-xl);
+}
+
+/* Margin Utilities */
+.m-xs {
+	margin: var(--space-xs);
+}
+
+.m-sm {
+	margin: var(--space-sm);
+}
+
+.m-md {
+	margin: var(--space-md);
+}
+
+.m-lg {
+	margin: var(--space-lg);
+}
+
+.m-xl {
+	margin: var(--space-xl);
+}
+
+.mt-xs {
+	margin-top: var(--space-xs);
+}
+
+.mt-sm {
+	margin-top: var(--space-sm);
+}
+
+.mt-md {
+	margin-top: var(--space-md);
+}
+
+.mt-lg {
+	margin-top: var(--space-lg);
+}
+
+.mt-xl {
+	margin-top: var(--space-xl);
+}
+
+.mb-xs {
+	margin-bottom: var(--space-xs);
+}
+
+.mb-sm {
+	margin-bottom: var(--space-sm);
+}
+
+.mb-md {
+	margin-bottom: var(--space-md);
+}
+
+.mb-lg {
+	margin-bottom: var(--space-lg);
+}
+
+.mb-xl {
+	margin-bottom: var(--space-xl);
+}
+
+.mr-xs {
+	margin-right: var(--space-xs);
+}
+
+.mr-sm {
+	margin-right: var(--space-sm);
+}
+
+.mr-md {
+	margin-right: var(--space-md);
+}
+
+.mr-lg {
+	margin-right: var(--space-lg);
+}
+
+.mr-xl {
+	margin-right: var(--space-xl);
+}
+
+.ml-xs {
+	margin-left: var(--space-xs);
+}
+
+.ml-sm {
+	margin-left: var(--space-sm);
+}
+
+.ml-md {
+	margin-left: var(--space-md);
+}
+
+.ml-lg {
+	margin-left: var(--space-lg);
+}
+
+.ml-xl {
+	margin-left: var(--space-xl);
+}
+
+.w-full {
+	width: 100%;
+}
+
+.text-center {
+	text-align: center;
+}
+
+.text-right {
+	text-align: right;
+}
+
+/* Typography Utilities */
+h1,
+h2,
+h3,
+h4,
+.text-xl,
+.text-lg,
+.sidebar-text {
+	font-family: var(--font-sans);
+	letter-spacing: -0.02em;
+}
+
+.text-xl {
+	font-size: 1.5rem;
+	font-weight: 600;
+}
+
+.text-lg {
+	font-size: 1.25rem;
+	font-weight: 500;
+}
+
+.text-sm {
+	font-size: 0.875rem;
+}
+
+.text-secondary {
+	color: var(--text-secondary);
+}
+
+.text-accent,
+.highlight-text {
+	color: var(--text-accent);
+}
+
+.text-success {
+	color: var(--text-success);
+}
+
+.text-danger {
+	color: var(--text-danger);
+}
+
+.text-warning {
+	color: var(--text-warning);
+}
+
+.text-info {
+	color: var(--text-info);
+}
+
+
+/* Monospace for numbers/code */
+.font-mono,
+.amount,
+.number {
+	font-family: var(--font-mono);
+}

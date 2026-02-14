@@ -276,7 +276,7 @@ export const Transactions = {
                 <td class="p-4 font-medium">${new Date(transaction.date).toLocaleDateString(locale)}</td>
                 <td class="p-4">
                     <div class="flex items-center gap-sm">
-                        <span class="text-lg w-8 h-8 flex items-center justify-center rounded-full bg-secondary bg-opacity-50">${getCategoryIcon(transaction.category)}</span>
+                        <span class="text-lg w-8 h-8 flex items-center justify-center rounded-full bg-secondary bg-opacity-50"><i class="${getCategoryIcon(transaction.category)}"></i></span>
                         <span class="font-medium">${categoryName}</span>
                     </div>
                 </td>

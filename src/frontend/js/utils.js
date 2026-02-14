@@ -36,25 +36,25 @@ export function formatCurrency(amount, fromCurrency = 'VND') {
 
 export function getCategoryIcon(category) {
 	const icons = {
-		'Food': '🍜',
-		'Transport': '🚗',
-		'Shopping': '🛍️',
-		'Bills': '💡',
-		'Rent': '🏠',
-		'Utilities': '⚡',
-		'Entertainment': '🎬',
-		'Health': '💊',
-		'Salary': '💰',
-		'Transfer': '↔️',
-		'Investment': '📈',
-		'Saving': '🐖',
-		'Debt': '💸',
-		'Support': '🤝',
-		'Personal': '👤',
-		'Together': '👩‍❤️‍👨',
-		'Other': '📝'
+		'Food': 'fa-solid fa-utensils',
+		'Transport': 'fa-solid fa-car',
+		'Shopping': 'fa-solid fa-bag-shopping',
+		'Bills': 'fa-solid fa-file-invoice-dollar',
+		'Rent': 'fa-solid fa-house',
+		'Utilities': 'fa-solid fa-bolt',
+		'Entertainment': 'fa-solid fa-film',
+		'Health': 'fa-solid fa-notes-medical',
+		'Salary': 'fa-solid fa-sack-dollar',
+		'Transfer': 'fa-solid fa-right-left',
+		'Investment': 'fa-solid fa-chart-line',
+		'Saving': 'fa-solid fa-piggy-bank',
+		'Debt': 'fa-solid fa-credit-card',
+		'Support': 'fa-solid fa-hand-holding-heart',
+		'Personal': 'fa-solid fa-user',
+		'Together': 'fa-solid fa-users',
+		'Other': 'fa-solid fa-pen-to-square'
 	};
-	return icons[category] || '📝';
+	return icons[category] || 'fa-solid fa-pen-to-square';
 }
 
 export function getCategoryName(categoryKey) {

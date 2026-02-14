@@ -83,7 +83,7 @@
 				</div>
 
 				<!-- Destination Section (Allocations Only) -->
-				<div id="destination-group" class="hidden" style="background: var(--bg-secondary);">
+				<div id="destination-group" class="hidden">
 					<h3 class="text-sm font-bold mb-2 text-secondary" data-i18n="destination_label">To
 						(Destination)</h3>
 
@@ -187,9 +187,9 @@
 
 		<div class="transaction-list-container table-rounded"
 			style="max-height: 300px; overflow-y: auto; margin-bottom: var(--space-lg)">
-			<table class="w-full text-left border-collapse" id="fixed-items-table">
+			<table class="w-full text-left border-collapse styled-table" id="fixed-items-table">
 				<thead>
-					<tr class="text-secondary text-sm border-b" style="border-color: var(--bg-accent)">
+					<tr class="text-secondary text-sm border-b">
 						<th class="p-4 font-medium" data-i18n="table_category">Category</th>
 						<th class="p-4 font-medium" data-i18n="table_description">Description</th>
 						<th class="p-4 font-medium text-right" data-i18n="table_amount">Amount</th>
@@ -320,7 +320,8 @@
 <div id="confirmation-modal" class="modal-overlay hidden" style="z-index: 2000;">
 	<div class="modal-content card" style="max-width: 400px;">
 		<h2 class="text-xl mb-4" id="confirmation-title" data-i18n="confirm_title">Confirm Action</h2>
-		<p class="text-secondary text-sm mb-6" id="confirmation-message" data-i18n="confirm_message">Are you sure you want to proceed?</p>
+		<p class="text-secondary text-sm mb-6" id="confirmation-message" data-i18n="confirm_message">Are you sure you
+			want to proceed?</p>
 		<div class="flex justify-end gap-md">
 			<button id="confirm-cancel-btn" class="btn btn-secondary" data-i18n="cancel_btn">Cancel</button>
 			<button id="confirm-ok-btn" class="btn btn-danger" data-i18n="confirm_btn">Confirm</button>
@@ -354,7 +355,8 @@
 			</div>
 
 			<div class="flex justify-end gap-4">
-				<button type="button" id="cancel-add-user-btn" class="btn btn-secondary" data-i18n="cancel_btn">Cancel</button>
+				<button type="button" id="cancel-add-user-btn" class="btn btn-secondary"
+					data-i18n="cancel_btn">Cancel</button>
 				<button type="submit" class="btn btn-primary px-8" data-i18n="create_user_btn">Create User</button>
 			</div>
 		</form>

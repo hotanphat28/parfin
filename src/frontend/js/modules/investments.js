@@ -108,7 +108,8 @@ export const Investments = {
                 </td>
                 <td class="p-4">${new Date(tx.date).toLocaleDateString()}</td>
                 <td class="p-4">
-                         <span class="text-lg w-8 h-8 flex items-center justify-center rounded-full bg-secondary bg-opacity-50">💰</span>
+					<div class="flex items-center gap-sm">
+                         <span class="text-lg w-8 h-8 flex items-center justify-center rounded-full bg-secondary bg-opacity-50"><i class="fa-solid fa-sack-dollar"></i></span>
                          <span class="capitalize font-medium">${t(`asset_type_${tx.asset_type}`)}</span>
                     </div>
                 </td>
@@ -163,7 +164,7 @@ export const Investments = {
                 </td>
                 <td class="p-4">
                     <div class="flex items-center gap-sm">
-                         <span class="text-lg w-8 h-8 flex items-center justify-center rounded-full bg-secondary bg-opacity-50">📈</span>
+                         <span class="text-lg w-8 h-8 flex items-center justify-center rounded-full bg-secondary bg-opacity-50"><i class="fa-solid fa-chart-line"></i></span>
                          <span class="capitalize font-medium">${t(`asset_type_${h.asset_type}`)}</span>
                     </div>
                 </td>
